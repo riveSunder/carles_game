@@ -7,6 +7,5 @@ pip install .
 
 cd ../
 
-python -c "from carle.carle.env import CARLE; env = CARLE(); print('Looks OK!')"
+python -c "from carle.carle.env import CARLE; env = CARLE(); print('Looks OK')"
 
-exec "$@"
