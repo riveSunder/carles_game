@@ -43,7 +43,7 @@ def update():
      
     new_data = dict(my_image=[obs.squeeze().cpu().numpy()])
     
-    source.stream(new_data, rollover=8)
+    source.stream(new_data, rollover=1)
     
     message.text = "Nominal update period = {} ms.".format(my_period)
     
