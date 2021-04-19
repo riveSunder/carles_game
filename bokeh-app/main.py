@@ -15,7 +15,7 @@ from bokeh.models import TextInput, Button, Paragraph
 from bokeh.models import ColumnDataSource
 
 
-env = CARLE()
+env = CARLE(width=96, height=96)
 obs = env.reset()
 p = figure(plot_width=3*256, plot_height=3*256)
 
