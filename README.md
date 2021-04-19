@@ -39,3 +39,7 @@ The current evaluation template is a Jupyter notebook using Bokeh for interactiv
 ```
 jupyter notebook
 ```
+
+However the scheme for running on notebook server [mybinder.org](https://mybinder.org) is a little more involved and uses `bokeh serve`. You can create an interactive bokeh app server on mybinder by following the link below.
+
+[`https://mybinder.org/v2/gh/riveSunder/carles_game/requirements-0x01?urlpath=/proxy/5006/carles-game`](https://mybinder.org/v2/gh/riveSunder/carles_game/requirements-0x01?urlpath=/proxy/5006/bokeh-app)
