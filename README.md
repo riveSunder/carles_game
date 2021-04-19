@@ -1,5 +1,9 @@
 # Carle's Game
 
+```
+<(o)__
+ ( .>/
+```
 ## Installation
 
 I am testing with and recommend using `virtualenv` to create python virtual environments for managing dependencies. If you already have `virtualenv` installed, make and activate a new environment like this:
