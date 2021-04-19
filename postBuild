@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd bokeh-app
+cd carles-game
 git clone https://github.com/riveSunder/carle.git
 
 cd carle
