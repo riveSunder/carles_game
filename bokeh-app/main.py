@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 from carle.carle.env import CARLE
-from carle.evaluation.submission import SubmissionAgent
+#from carle.evaluation.submission import SubmissionAgent
 
 import bokeh
 import bokeh.io as bio
@@ -18,7 +18,7 @@ from bokeh.models import ColumnDataSource
 
 env = CARLE()
 
-agent = SubmissionAgent()
+#agent = SubmissionAgent()
 
 env.birth = [3]
 env.survive = [0,2,3] 
@@ -46,7 +46,7 @@ message = Paragraph()
 def update():
     
     global obs
-    action = agent(obs)
+    action = 1.0 * (torch.rand(env.instances,1,env.action_height,env.action_width) < 0.05) #agent(obs)
     
     obs, r, d, i = env.step(action)
      
