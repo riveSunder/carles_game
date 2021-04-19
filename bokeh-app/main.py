@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 from carle.carle.env import CARLE
-#from carle.evaluation.submission import SubmissionAgent
+from carle.evaluation.submission import SubmissionAgent
 
 import bokeh
 import bokeh.io as bio
