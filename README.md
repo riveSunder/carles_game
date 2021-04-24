@@ -3,14 +3,14 @@
 
 ## Installation
 
-I am testing with and recommend using `virtualenv` to create python virtual environmeheight=128, width=128)nts for managing dependencies. If you already have `virtualenv` installed, make and activate a new environment like this:
+I am testing with and recommend using `virtualenv` to create python virtual environments for managing dependencies. If you already have `virtualenv` installed, you can create and then activate a new environment with the following commands:
 
 ```
 virtualenv carles_venv --python=python3
 source carles_venv/bin/activate 
 ```
 
-Note that I am using Ubuntu 18. If you have a different experience setting up or using CARLE and Carle's Game, feel free to send me your notes (go ahead and open an issue) and I will update the installation instructions here. 
+Note that I am using Ubuntu 18. If you are using a different operating system and/or have a different experience setting up or using CARLE and Carle's Game, feel free to send me your notes (go ahead and open an issue) and I will update the installation instructions here. 
 
 ```
 git clone  https://github.com/riveSunder/carles_game.git
@@ -24,10 +24,10 @@ cd carle
 
 pip install -e .
 
-# run tests
+# run tests if you want
 python -m test.test_all
 
-# go back to the root directory
+# go back to the root directory and see if CARLE is working
 cd ../
 python -c "from carle.env import CARLE; env = CARLE(); obs = env.reset(); print('Looks OK')"
 ```
