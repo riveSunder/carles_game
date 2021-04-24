@@ -5,7 +5,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from carle.carle.env import CARLE
+from carle.env import CARLE
+from submission.agents import SubmissionAgent
 
 import bokeh
 import bokeh.io as bio
@@ -15,43 +16,6 @@ from bokeh.plotting import figure
 from bokeh.layouts import column, row
 from bokeh.models import TextInput, Button, Paragraph
 from bokeh.models import ColumnDataSource
-class DemoAgent(nn.Module):
-
-    def __init__(self, **kwargs):
-        super(DemoAgent, self).__init__()
-
-        self.action_width = kwargs["action_width"] \
-                if "action_width" in kwargs.keys()\
-                else 64
-        self.action_height = kwargs["action_height"] \
-                if "action_height" in kwargs.keys()\
-                else 64
-        self.observation_width = kwargs["observation_width"] \
-                if "observatoin_width" in kwargs.keys()\
-                else 256
-        self.observation_height = kwargs["observation_height"] \
-                if "observation_height" in kwargs.keys()\
-                else 256
-
-        self.toggle_rate = 0.020
-
-    def forward(self, obs):
-
-        instances = obs.shape[0]
-        action = 1.0 \
-            * (torch.rand(instances,1,self.action_width, self.action_height)\
-                <= self.toggle_rate)
-
-        return action
-
-class SubmissionAgent(DemoAgent):
-
-    def __init__(self, **kwargs):
-        """
-        Submission agent, must produce actions (binary toggles) when called
-        """
-        
-        super(SubmissionAgent, self).__init__(**kwargs)
 
 env = CARLE()
 
@@ -62,6 +26,7 @@ env.survive = [0,2,3]
 
 global obs
 obs = env.reset()
+
 p = figure(plot_width=3*256, plot_height=3*256)
 
 global my_period
@@ -71,7 +36,7 @@ my_period = 512
 
 source = ColumnDataSource(data=dict(my_image=[obs.squeeze().cpu().numpy()]))
 ColumnDataSource(data=dict(x=[1], y=[0]))
-img = p.image(image='my_image',x=0, y=0, dw=256, dh=256, palette="Greys3", source=source)
+img = p.image(image='my_image',x=0, y=0, dw=256, dh=256, palette="Magma256", source=source)
 
 
 button_go = Button(sizing_mode="stretch_width", label="Run >")     
@@ -81,17 +46,22 @@ button_reset = Button(sizing_mode="stretch_width",label="Reset")
 message = Paragraph()
 
 def update():
-    
     global obs
+    global stretch_pixel
+
     action = agent(obs)
-    
-    obs, r, d, i = env.step(action)
-     
-    new_data = dict(my_image=[obs.squeeze().cpu().numpy()])
+
+    padded_action = stretch_pixel/2 + env.action_padding(action).squeeze()
+
+    my_img = (padded_action*2 + obs.squeeze()).cpu().numpy()
+    my_img[my_img > 3] = 3.0
+
+    new_data = dict(my_image=[my_img])
     
     source.stream(new_data, rollover=1)
     
     message.text = "Nominal update period = {} ms.".format(my_period)
+    obs, r, d, i = env.step(action)
     
 def go():
    
@@ -105,19 +75,32 @@ def go():
         button_go.label = "Run >"
 
 def faster():
-    
-    
     global my_period
     my_period = max([my_period * 0.5, 1])
+    go()
+    go()
     
 def slower():
-    
     global my_period
     my_period = min([my_period * 2, 8192])
+    go()
+    go()
 
 def reset():
+    global obs
+    global stretch_pixel
+
     obs = env.reset()
+    stretch_pixel = torch.zeros_like(obs).squeeze()
+    stretch_pixel[0,0] = 3
+
+    new_data = dict(my_image=[(stretch_pixel + obs.squeeze()).cpu().numpy()])
+
+    source.stream(new_data, rollover=1)
     
+
+reset()
+
 button_go.on_click(go)
 button_faster.on_click(faster)
 button_slower.on_click(slower)
