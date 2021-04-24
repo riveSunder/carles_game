@@ -9,6 +9,7 @@ setup(name="carles_game",\
                         "numpy==1.18.4",\
                         "torch==1.5.1",\
                         "scikit-image==0.17.2",\
+                        "jupyter_server_proxy",\
                         "matplotlib==3.3.3"],\
         version="0.01")
 
