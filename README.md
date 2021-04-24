@@ -18,7 +18,7 @@ Note that I am using Ubuntu 18. If you have a different experience setting up or
 ```
 git clone  https://github.com/riveSunder/carles_game.git
 cd carles_game
-pip install -r requirements.txt
+pip install -e .
 
 # install the environment, CARLE
 git clone https://github.com/riveSunder/carle.git
