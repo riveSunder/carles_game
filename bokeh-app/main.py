@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from carle.carle.env import CARLE
+from carle.env import CARLE
 from submission.agents import SubmissionAgent
 
 import bokeh
