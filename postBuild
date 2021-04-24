@@ -1,14 +1,15 @@
 #!/bin/bash
 
-cd bokeh-app
+pip install -e .
+
 git clone https://github.com/riveSunder/carle.git
 
 cd carle
-pip install .
+pip install -e .
 
 cd ../
 
-python -c "from carle.carle.env import CARLE; env = CARLE(); print('Looks OK')"
+python -c "from carle.env import CARLE; env = CARLE(); print('Looks OK')"
 
 cd ../
 
