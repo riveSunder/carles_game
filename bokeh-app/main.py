@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from carle.carle.env import CARLE
+from carle.env import CARLE
 from submission.agents import SubmissionAgent
 
 import bokeh
@@ -45,6 +45,11 @@ button_faster = Button(sizing_mode="stretch_width",label="Faster >>")
 button_reset = Button(sizing_mode="stretch_width",label="Reset")
 message = Paragraph()
 
+input_birth = TextInput(value="B3")
+input_survive = TextInput(value="S023")
+button_birth = Button(sizing_mode="stretch_width", label="Update Birth Rule")
+button_survive = Button(sizing_mode="stretch_width", label="Update Survival Rule")
+
 def update():
     global obs
     global stretch_pixel
@@ -60,7 +65,6 @@ def update():
     
     source.stream(new_data, rollover=1)
     
-    message.text = "Nominal update period = {} ms.".format(my_period)
     obs, r, d, i = env.step(action)
     
 def go():
@@ -97,10 +101,42 @@ def reset():
     new_data = dict(my_image=[(stretch_pixel + obs.squeeze()).cpu().numpy()])
 
     source.stream(new_data, rollover=1)
+
+def set_birth_rules():
+    env.birth_rule_from_string(input_birth.value)
+
+    my_message = "Rules updated to B"
+
+    for elem in env.birth:
+        my_message += str(elem)
+
+    my_message += "/S"
+
+    for elem in env.survive:
+        my_message += str(elem)
+
+    message.text = my_message
+
+def set_survive_rules():
+    env.survive_rule_from_string(input_survive.value)
+
+    my_message = "Rules updated to B"
+
+    for elem in env.birth:
+        my_message += str(elem)
+
+    my_message += "/S"
+
+    for elem in env.survive:
+        my_message += str(elem)
+
+    message.text = my_message
     
 
 reset()
 
+button_birth.on_click(set_birth_rules)
+button_survive.on_click(set_survive_rules)
 button_go.on_click(go)
 button_faster.on_click(faster)
 button_slower.on_click(slower)
@@ -108,9 +144,11 @@ button_reset.on_click(reset)
 
 
 control_layout = row(button_slower, button_go, button_faster, button_reset)
+rule_layout = row(input_birth, button_birth, input_survive, button_survive)
 display_layout = row(p)
 message_layout = row(message)
 
 curdoc().add_root(display_layout)
 curdoc().add_root(control_layout)
+curdoc().add_root(rule_layout)
 curdoc().add_root(message_layout)
