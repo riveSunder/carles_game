@@ -29,7 +29,7 @@ class DemoAgent(nn.Module):
                 if "observation_height" in kwargs.keys()\
                 else 256
 
-        self.toggle_rate = 0.40
+        self.toggle_rate = 0.485
         
         in_dim = self.observation_width * self.observation_height
         out_dim = self.action_width * self.action_height
