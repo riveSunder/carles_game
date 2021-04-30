@@ -16,10 +16,13 @@ from bokeh.plotting import figure
 from bokeh.layouts import column, row
 from bokeh.models import TextInput, Button, Paragraph
 from bokeh.models import ColumnDataSource
+from bokeh.events import DoubleTap, Tap
+
 
 env = CARLE()
 
 agent = SubmissionAgent()
+agent.toggle_rate = 0.48
 
 env.birth = [3]
 env.survive = [0,2,3] 
@@ -53,6 +56,9 @@ button_survive = Button(sizing_mode="stretch_width", label="Update Survival Rule
 def update():
     global obs
     global stretch_pixel
+    global action
+
+    obs, r, d, i = env.step(action)
 
     action = agent(obs)
 
@@ -65,14 +71,12 @@ def update():
     
     source.stream(new_data, rollover=1)
     
-    obs, r, d, i = env.step(action)
     
 def go():
    
     if button_go.label == "Run >":
         my_callback = curdoc().add_periodic_callback(update, my_period)
         button_go.label = "Pause"
-        #curdoc().remove_periodic_callback(my_callback)
         
     else:
         curdoc().remove_periodic_callback(curdoc().session_callbacks[0])
@@ -132,6 +136,63 @@ def set_survive_rules():
 
     message.text = my_message
     
+def human_toggle(event):
+    global action
+    
+    coords = [np.round(event.y -0.5), np.round(event.x-0.5)]
+    offset_x = (env.height - env.action_height) / 2
+    offset_y = (env.width - env.action_width) / 2
+    
+    coords[0] = coords[0] - offset_x
+    coords[1] = coords[1] - offset_y
+    
+    coords[0] = np.uint8(np.clip(coords[0], 0, env.action_height-1))
+    coords[1] = np.uint8(np.clip(coords[1], 0, env.action_height-1))
+    
+    action[:, :, coords[0], coords[1]] = 1.0 * (not(action[:, :, coords[0], coords[1]]))
+    
+    padded_action = stretch_pixel/2 + env.action_padding(action).squeeze()
+    
+    my_img = (padded_action*2 + obs.squeeze()).cpu().numpy()
+    my_img[my_img > 3.0] = 3.0
+    (padded_action*2 + obs.squeeze()).cpu().numpy()
+    new_data = dict(my_image=[my_img])
+    
+    source.stream(new_data, rollover=8)
+    
+         
+    
+def clear_toggles():
+    global action
+    
+    action *= 0
+    if button_go.label == "Pause":
+        curdoc().remove_periodic_callback(curdoc().session_callbacks[0])
+        button_go.label = "Run >"
+
+        padded_action = stretch_pixel/2 + env.action_padding(action * 0).squeeze()
+        
+        my_img = (padded_action*2 + obs.squeeze()).cpu().numpy()
+        my_img[my_img > 3.0] = 3.0
+        (padded_action*2 + obs.squeeze()).cpu().numpy()
+        new_data = dict(my_image=[my_img])
+        
+        source.stream(new_data, rollover=8)
+    else:
+        my_callback = curdoc().add_periodic_callback(update, my_period)
+        button_go.label = "Pause"
+        
+
+    
+
+global action
+action = torch.zeros(1, 1, env.action_height, env.action_width)
+
+reset()
+
+
+p.on_event(Tap, human_toggle)
+p.on_event(DoubleTap, clear_toggles)
 
 reset()
 
