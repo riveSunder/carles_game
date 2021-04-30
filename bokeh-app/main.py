@@ -158,7 +158,7 @@ def human_toggle(event):
     (padded_action*2 + obs.squeeze()).cpu().numpy()
     new_data = dict(my_image=[my_img])
     
-    source.stream(new_data, rollover=8)
+    source.stream(new_data, rollover=1)
     
          
     
@@ -177,7 +177,7 @@ def clear_toggles():
         (padded_action*2 + obs.squeeze()).cpu().numpy()
         new_data = dict(my_image=[my_img])
         
-        source.stream(new_data, rollover=8)
+        source.stream(new_data, rollover=1)
     else:
         my_callback = curdoc().add_periodic_callback(update, my_period)
         button_go.label = "Pause"
