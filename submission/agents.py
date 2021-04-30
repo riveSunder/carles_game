@@ -29,14 +29,25 @@ class DemoAgent(nn.Module):
                 if "observation_height" in kwargs.keys()\
                 else 256
 
-        self.toggle_rate = 0.100
+        self.toggle_rate = 0.485
+        
+        in_dim = self.observation_width * self.observation_height
+        out_dim = self.action_width * self.action_height
+        hid_dim = 256
+
+        self.mlp = torch.nn.Sequential(torch.nn.Linear(in_dim, hid_dim),\
+                torch.nn.ReLU(),\
+                torch.nn.Linear(hid_dim, out_dim),\
+                torch.nn.Sigmoid())
 
     def forward(self, obs):
 
         instances = obs.shape[0]
-        action = 1.0 \
-            * (torch.rand(instances,1,self.action_width, self.action_height)\
-                <= self.toggle_rate)
+        x = self.mlp(obs.flatten())
+
+        x = x.reshape(instances, 1, self.action_height, self.action_width)
+        
+        action = 1.0 * (x <= self.toggle_rate)
 
         return action
 
