@@ -41,7 +41,6 @@ source = ColumnDataSource(data=dict(my_image=[obs.squeeze().cpu().numpy()]))
 ColumnDataSource(data=dict(x=[1], y=[0]))
 img = p.image(image='my_image',x=0, y=0, dw=256, dh=256, palette="Magma256", source=source)
 
-
 button_go = Button(sizing_mode="stretch_width", label="Run >")     
 button_slower = Button(sizing_mode="stretch_width",label="<< Slower")
 button_faster = Button(sizing_mode="stretch_width",label="Faster >>")
@@ -73,8 +72,7 @@ def update():
 
     new_data = dict(my_image=[my_img])
     
-    source.stream(new_data, rollover=1)
-    
+    source.stream(new_data, rollover=1)  
     
 def go():
    
@@ -164,8 +162,6 @@ def human_toggle(event):
     
     source.stream(new_data, rollover=1)
     
-         
-    
 def clear_toggles():
     global action
     
@@ -184,6 +180,7 @@ def clear_toggles():
         source.stream(new_data, rollover=1)
     else:
         my_callback = curdoc().add_periodic_callback(update, my_period)
+
         button_go.label = "Pause"
 
 def agent_on_off():
@@ -202,11 +199,11 @@ def agent_on_off():
 global agent_on
 agent_on = True
 
+
 global action
 action = torch.zeros(1, 1, env.action_height, env.action_width)
 
 reset()
-
 
 p.on_event(Tap, human_toggle)
 p.on_event(DoubleTap, clear_toggles)
@@ -220,7 +217,6 @@ button_faster.on_click(faster)
 button_slower.on_click(slower)
 button_reset.on_click(reset)
 button_agent_switch.on_click(agent_on_off)
-
 
 control_layout = row(button_slower, button_go, button_faster, button_reset)
 rule_layout = row(input_birth, button_birth, input_survive, button_survive)
