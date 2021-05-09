@@ -219,7 +219,7 @@ button_go.on_click(go)
 button_faster.on_click(faster)
 button_slower.on_click(slower)
 button_reset.on_click(reset)
-butt_agent_switch.on_click(agent_on_off)
+button_agent_switch.on_click(agent_on_off)
 
 
 control_layout = row(button_slower, button_go, button_faster, button_reset)
