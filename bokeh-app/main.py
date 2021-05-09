@@ -52,6 +52,7 @@ input_birth = TextInput(value="B3")
 input_survive = TextInput(value="S023")
 button_birth = Button(sizing_mode="stretch_width", label="Update Birth Rule")
 button_survive = Button(sizing_mode="stretch_width", label="Update Survival Rule")
+button_agent_switch = Button(sizing_mode="stretch_width", label="Turn Agent Off")
 
 def update():
     global obs
@@ -60,7 +61,10 @@ def update():
 
     obs, r, d, i = env.step(action)
 
-    action = agent(obs)
+    if agent_on:
+        action = agent(obs)
+    else:
+        action = torch.zeros_like(action)
 
     padded_action = stretch_pixel/2 + env.action_padding(action).squeeze()
 
@@ -181,9 +185,22 @@ def clear_toggles():
     else:
         my_callback = curdoc().add_periodic_callback(update, my_period)
         button_go.label = "Pause"
-        
 
+def agent_on_off():
+    global agent_on
+
+    if button_agent_switch.label == "Turn Agent Off":
+
+        agent_on = False
+        button_agent_switch.label = "Turn Agent On"
+
+    else:
+
+        agent_on = True
+        button_agent_switch.label = "Turn Agent Off"
     
+global agent_on
+agent_on = True
 
 global action
 action = torch.zeros(1, 1, env.action_height, env.action_width)
@@ -202,14 +219,17 @@ button_go.on_click(go)
 button_faster.on_click(faster)
 button_slower.on_click(slower)
 button_reset.on_click(reset)
+butt_agent_switch.on_click(agent_on_off)
 
 
 control_layout = row(button_slower, button_go, button_faster, button_reset)
 rule_layout = row(input_birth, button_birth, input_survive, button_survive)
 display_layout = row(p)
 message_layout = row(message)
+agent_toggle_layout = row(button_agent_switch)
 
 curdoc().add_root(display_layout)
 curdoc().add_root(control_layout)
 curdoc().add_root(rule_layout)
 curdoc().add_root(message_layout)
+curdoc().add_root(agent_toggle_layout)
