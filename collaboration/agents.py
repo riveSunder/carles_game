@@ -1,5 +1,6 @@
 import time
 import numpy as np
+from functools import reduce
 
 import torch
 import torch.nn as nn
@@ -53,7 +54,7 @@ class TrainAgent(nn.Module):
 
         toggle_probability = x.reshape(instances, 1, self.action_height, self.action_width)
         
-        action = 1.0 * (torch.rand_like(toggle_probability) <= toggle_probability)
+        action = 0.0 * (torch.rand_like(toggle_probability) <= toggle_probability)
 
         return action
 
@@ -62,7 +63,24 @@ class ConvGRNNAgent(TrainAgent):
         """
         Submission agent, must produce actions (binary toggles) when called
         """
+        self.use_grad = False
+        self.population_size = 32
+        self.agents = []
+        self.fitness = []
+        
         super(ConvGRNNAgent, self).__init__(**kwargs)
+
+        params = self.get_params()
+
+        self.initialize_policy()
+
+        params = np.append(params[np.newaxis,:], \
+                self.get_params()[np.newaxis,:], axis=0)
+
+        means = np.mean(params, axis=0)
+        var = np.var(params, axis=0)
+
+        self.distribution = [means, np.diag(var)] 
 
     def reset_cells(self):
 
@@ -70,10 +88,10 @@ class ConvGRNNAgent(TrainAgent):
 
     def initialize_policy(self):
     
-        self.hidden_channels = 16
+        self.hidden_channels = 8
 
-        self.cells = torch.zeros(self.instances, 1, self.action_height // 4, \
-                self.action_width // 4)
+        self.cells = nn.Parameter(torch.zeros(self.instances, 1, self.action_height // 4, \
+                self.action_width // 4), requires_grad=False)
 
         self.feature_conv = nn.Sequential(\
                 nn.Conv2d(1, self.hidden_channels, kernel_size=3, stride=2, padding=1), \
@@ -105,8 +123,15 @@ class ConvGRNNAgent(TrainAgent):
                 nn.Sigmoid())
 
 
-        nn.init.constant(self.gate_conv[2].bias, 2.0)
-        nn.init.constant(self.action_conv[4].bias, -4.0)
+        nn.init.constant_(self.gate_conv[2].bias, 2.0 + np.random.randn()*1e-3)
+        nn.init.constant_(self.action_conv[4].bias, -5.0 + np.random.randn()*1e-3)
+
+        for params in [self.feature_conv.parameters(), \
+                self.gate_conv.parameters(), \
+                self.action_conv.parameters()]:
+
+            for param in params: #self.lr_layers.parameters():
+                param.requires_grad = self.use_grad
 
     def forward(self, obs):
 
@@ -126,20 +151,126 @@ class ConvGRNNAgent(TrainAgent):
 
         return action
     
-    def step(self):
+    def get_params(self):
+        params = np.array([])
+
+        for param in self.feature_conv.named_parameters():
+            params = np.append(params, param[1].detach().cpu().numpy().ravel())
+
+        for param in self.gate_conv.named_parameters():
+            params = np.append(params, param[1].detach().cpu().numpy().ravel())
+
+        for param in self.action_conv.named_parameters():
+            params = np.append(params, param[1].detach().cpu().numpy().ravel())
+
+        return params
+
+    def set_params(self, my_params):
+
+        param_start = 0
+
+        for name, param in self.feature_conv.named_parameters():
+
+            param_stop = param_start + reduce(lambda x,y: x*y, param.shape)
+
+            param[:] = torch.nn.Parameter(torch.tensor(\
+                    my_params[param_start:param_stop].reshape(param.shape), \
+                    requires_grad=self.use_grad), \
+                    requires_grad=self.use_grad).to(param[:].device)
+
+            param_start = param_stop
+
+        for name, param in self.gate_conv.named_parameters():
+
+            param_stop = param_start + reduce(lambda x,y: x*y, param.shape)
+
+            param[:] = torch.nn.Parameter(torch.tensor(\
+                    my_params[param_start:param_stop].reshape(param.shape), \
+                    requires_grad=self.use_grad), \
+                    requires_grad=self.use_grad).to(param[:].device)
+
+            param_start = param_stop
+
+        for name, param in self.action_conv.named_parameters():
+
+            param_stop = param_start + reduce(lambda x,y: x*y, param.shape)
+
+            param[:] = torch.nn.Parameter(torch.tensor(\
+                    my_params[param_start:param_stop].reshape(param.shape), \
+                    requires_grad=self.use_grad), \
+                    requires_grad=self.use_grad).to(param[:].device)
+
+            param_start = param_stop
+
+
+    def update(self):
+        """
+        select champions and update the population distribution according to fitness
+
+        """
+        print("updating policy distribution")
+
+        sorted_indices = list(np.argsort(np.array(self.fitness)))
+
+        sorted_indices.reverse()
+
+        sorted_params = np.array(self.agents)[sorted_indices]
+
+        keep = self.population_size // 8
+
+        elite_means = np.mean(sorted_params[0:keep], axis=0, keepdims=True)
+
+        covariance = np.matmul(\
+                (elite_means - self.distribution[0]).T,
+                (elite_means - self.distribution[0]))
+
+        self.distribution = [elite_means.squeeze(), covariance]
+
+        self.agents = []
+        self.fitness = [] 
+
+        np.save("../policies/grnn_mean.npy", self.distribution[0])
+        np.save("../policies/grnn_covar.npy", self.distribution[1])
+
+        print("updated policy distribution")
+
+
+    def step(self, rewards=None):
         """
         update agent(s)
-        
         this method is called everytime the CA universe is reset. 
-        """
-        return 0
+        """ 
 
+        if rewards is not None:
+            if type(rewards) == torch.Tensor:
+                fitness = np.sum(np.array(rewards.cpu()))
+            else:
+                fitness = np.sum(np.array(rewards))
+        else:
+            fitness = np.random.randn(1) * 1e-5
 
+        self.agents.append(self.get_params())
+        self.fitness.append(fitness)
+
+        if len(self.fitness) > self.population_size:
+            self.update()
+
+        new_params = np.random.multivariate_normal(\
+                self.distribution[0], self.distribution[1])
+
+        self.set_params(new_params)
 
 if __name__ == "__main__":
 
     agent = ConvGRNNAgent() 
 
-    obs = 1.0 * (torch.rand(1, 1, agent.observation_height, agent.observation_width) < 0.1)
+    obs = 0.0 * (torch.rand(1, 1, agent.observation_height, agent.observation_width) < 0.1)
 
     action = agent(obs)
+    
+    for ii in range(32):
+        agent.step(rewards=torch.randn(10,))
+        print(len(agent.fitness))
+
+    agent.step(rewards=np.random.randn(np.random.randint(10),))
+
