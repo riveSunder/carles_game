@@ -64,7 +64,10 @@ class ConvGRNNAgent(TrainAgent):
         Submission agent, must produce actions (binary toggles) when called
         """
         self.use_grad = False
-        self.population_size = 32
+        self.population_size = 4
+        self.generation = 0
+        self.episodes = 0
+        self.max_episodes = 3
         self.agents = []
         self.fitness = []
         
@@ -138,6 +141,7 @@ class ConvGRNNAgent(TrainAgent):
         instances = obs.shape[0]
 
         features = self.feature_conv(obs)
+
         gate_states = self.gate_conv(torch.cat([features, self.cells], dim=1))
 
         self.cells *= (1-gate_states)
@@ -216,7 +220,7 @@ class ConvGRNNAgent(TrainAgent):
 
         sorted_params = np.array(self.agents)[sorted_indices]
 
-        keep = self.population_size // 8
+        keep = self.population_size // 2
 
         elite_means = np.mean(sorted_params[0:keep], axis=0, keepdims=True)
 
@@ -229,11 +233,13 @@ class ConvGRNNAgent(TrainAgent):
         self.agents = []
         self.fitness = [] 
 
-        np.save("../policies/grnn_mean.npy", self.distribution[0])
-        np.save("../policies/grnn_covar.npy", self.distribution[1])
+        np.save("../policies/grnn_mean_gen{}.npy".format(self.generation), \
+                self.distribution[0])
+        np.save("../policies/grnn_covar_gen{}.npy".format(self.generation), \
+                self.distribution[1])
 
-        print("updated policy distribution")
-
+        print("gen. {} updated policy distribution".format(self.generation))
+        self.generation += 1
 
     def step(self, rewards=None):
         """
@@ -241,24 +247,33 @@ class ConvGRNNAgent(TrainAgent):
         this method is called everytime the CA universe is reset. 
         """ 
 
+
+        
         if rewards is not None:
             if type(rewards) == torch.Tensor:
-                fitness = np.sum(np.array(rewards.cpu()))
+                fitness = np.sum(np.array(rewards.detach().cpu()))
             else:
                 fitness = np.sum(np.array(rewards))
+
+            fitness /= len(rewards) + 1e-7
         else:
             fitness = np.random.randn(1) * 1e-5
 
         self.agents.append(self.get_params())
         self.fitness.append(fitness)
 
-        if len(self.fitness) > self.population_size:
+        if len(self.fitness) > self.population_size * self.max_episodes:
             self.update()
 
-        new_params = np.random.multivariate_normal(\
-                self.distribution[0], self.distribution[1])
+        if self.episodes <= self.max_episodes:
+            new_params = np.random.multivariate_normal(\
+                    self.distribution[0], self.distribution[1])
+            self.set_params(new_params)
 
-        self.set_params(new_params)
+            self.episodes = 0
+
+        else: 
+            self.episodes += 1
 
 if __name__ == "__main__":
 
@@ -268,7 +283,7 @@ if __name__ == "__main__":
 
     action = agent(obs)
     
-    for ii in range(32):
+    for ii in range(4):
         agent.step(rewards=torch.randn(10,))
         print(len(agent.fitness))
 
