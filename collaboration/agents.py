@@ -98,36 +98,35 @@ class ConvGRNNAgent(TrainAgent):
 
         self.feature_conv = nn.Sequential(\
                 nn.Conv2d(1, self.hidden_channels, kernel_size=3, stride=2, padding=1), \
-                nn.ReLU(), \
+                nn.LeakyReLU(), \
                 nn.Conv2d(self.hidden_channels, self.hidden_channels, \
                         kernel_size=3, stride=2, padding=1), \
-                nn.ReLU(), \
+                nn.LeakyReLU(), \
                 nn.Conv2d(self.hidden_channels, self.hidden_channels, \
                         kernel_size=3, stride=2, padding=1), \
-                nn.ReLU(), \
-
+                nn.LeakyReLU(), \
                 nn.Conv2d(self.hidden_channels, 1, kernel_size=3, stride=2, padding=1), \
-                nn.ReLU())
+                nn.Sigmoid())
 
         self.gate_conv = nn.Sequential(\
                 nn.Conv2d(2, self.hidden_channels, kernel_size=3, stride=1, padding=1), \
-                nn.ReLU(), \
+                nn.LeakyReLU(), \
                 nn.Conv2d(self.hidden_channels, 1, kernel_size=3, stride=1, padding=1), \
                 nn.Sigmoid())
 
         self.action_conv = nn.Sequential(\
                 nn.ConvTranspose2d(1, self.hidden_channels, kernel_size=2, stride=2, padding=0), \
-                nn.ReLU(), \
+                nn.LeakyReLU(), \
                 nn.ConvTranspose2d(self.hidden_channels, self.hidden_channels, \
                         kernel_size=2, stride=2, padding=0), \
-                nn.ReLU(), \
+                nn.LeakyReLU(), \
                 nn.Conv2d(self.hidden_channels, 1, \
                         kernel_size=3, stride=1, padding=1), \
                 nn.Sigmoid())
 
 
         nn.init.constant_(self.gate_conv[2].bias, 2.0 + np.random.randn()*1e-3)
-        nn.init.constant_(self.action_conv[4].bias, -5.0 + np.random.randn()*1e-3)
+        nn.init.constant_(self.action_conv[4].bias, -3.0 + np.random.randn()*1e-3)
 
         for params in [self.feature_conv.parameters(), \
                 self.gate_conv.parameters(), \
@@ -146,6 +145,7 @@ class ConvGRNNAgent(TrainAgent):
 
         self.cells *= (1-gate_states)
         self.cells += gate_states * features
+        #self.cells += features
 
         x = self.action_conv(self.cells)
 
@@ -207,6 +207,42 @@ class ConvGRNNAgent(TrainAgent):
             param_start = param_stop
 
 
+class CMAPopulation():
+    def __init__(self, agent_fn, device="cpu"):
+        """
+        """
+        self.use_grad = False
+        self.population_size = 16
+        self.meta_index = 0
+        self.generation = 0
+        self.episodes = 0
+        self.device = torch.device(device)
+
+        self.agents = []
+        self.fitness = []
+        
+        self.population = [agent_fn() for ii in range(self.population_size)]
+
+        for kk in range(self.population_size):
+            self.population[kk].to(self.device)
+
+        params = self.population[0].get_params()[np.newaxis,:]
+
+        for jj in range(1,len(self.population)):
+            params = np.append(params, \
+                    self.population[jj].get_params()[np.newaxis,:], axis=0)
+
+        means = np.mean(params, axis=0)
+        var = np.var(params, axis=0)
+
+        self.distribution = [means, np.diag(var)] 
+
+    def __call__(self, obs, agent_index=0):
+
+        action = self.population[agent_index + self.meta_index](obs)
+
+        return action
+
     def update(self):
         """
         select champions and update the population distribution according to fitness
@@ -214,13 +250,15 @@ class ConvGRNNAgent(TrainAgent):
         """
         print("updating policy distribution")
 
+        self.agents = [agent.get_params() for agent in self.population] 
+
         sorted_indices = list(np.argsort(np.array(self.fitness)))
 
         sorted_indices.reverse()
 
         sorted_params = np.array(self.agents)[sorted_indices]
 
-        keep = self.population_size // 2
+        keep = self.population_size // 4
 
         elite_means = np.mean(sorted_params[0:keep], axis=0, keepdims=True)
 
@@ -230,50 +268,34 @@ class ConvGRNNAgent(TrainAgent):
 
         self.distribution = [elite_means.squeeze(), covariance]
 
-        self.agents = []
-        self.fitness = [] 
 
         np.save("../policies/grnn_mean_gen{}.npy".format(self.generation), \
                 self.distribution[0])
         np.save("../policies/grnn_covar_gen{}.npy".format(self.generation), \
                 self.distribution[1])
 
+        np.save("../policies/grnn_best_gen{}.npy".format(self.generation),\
+                self.agents[0])
+
+        self.agents = []
+        self.fitness = [] 
+
         print("gen. {} updated policy distribution".format(self.generation))
         self.generation += 1
 
-    def step(self, rewards=None):
+    def step(self, rewards=[0,0,0,0.]):
         """
         update agent(s)
         this method is called everytime the CA universe is reset. 
         """ 
 
+        self.fitness.extend(rewards)
 
-        
-        if rewards is not None:
-            if type(rewards) == torch.Tensor:
-                fitness = np.sum(np.array(rewards.detach().cpu()))
-            else:
-                fitness = np.sum(np.array(rewards))
-
-            fitness /= len(rewards) + 1e-7
-        else:
-            fitness = np.random.randn(1) * 1e-5
-
-        self.agents.append(self.get_params())
-        self.fitness.append(fitness)
-
-        if len(self.fitness) > self.population_size * self.max_episodes:
+        if len(self.fitness) >= self.population_size :
             self.update()
+        else:
+            self.meta_index = len(self.fitness)
 
-        if self.episodes <= self.max_episodes:
-            new_params = np.random.multivariate_normal(\
-                    self.distribution[0], self.distribution[1])
-            self.set_params(new_params)
-
-            self.episodes = 0
-
-        else: 
-            self.episodes += 1
 
 if __name__ == "__main__":
 
