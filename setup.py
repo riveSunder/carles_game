@@ -1,7 +1,7 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(name="carles_game",\
-        py_modules=["submission"],\
+        packages=["submission", "collaboration"],\
         install_requires=[\
                         "bokeh==2.3.1",\
                         "jupyter==1.0.0",\
