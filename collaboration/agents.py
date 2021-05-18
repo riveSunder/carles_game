@@ -1,3 +1,4 @@
+import os
 import time
 import numpy as np
 from functools import reduce
@@ -70,6 +71,8 @@ class ConvGRNNAgent(TrainAgent):
         self.max_episodes = 3
         self.agents = []
         self.fitness = []
+
+        self.save_path = kwargs["save_path"] if "save_path" in kwargs.keys() else "" 
         
         super(ConvGRNNAgent, self).__init__(**kwargs)
 
@@ -84,6 +87,7 @@ class ConvGRNNAgent(TrainAgent):
         var = np.var(params, axis=0)
 
         self.distribution = [means, np.diag(var)] 
+        self.tag = int(time.time())
 
     def reset_cells(self):
 
@@ -125,8 +129,8 @@ class ConvGRNNAgent(TrainAgent):
                 nn.Sigmoid())
 
 
-        nn.init.constant_(self.gate_conv[2].bias, 2.0 + np.random.randn()*1e-3)
-        nn.init.constant_(self.action_conv[4].bias, -3.0 + np.random.randn()*1e-3)
+        nn.init.constant_(self.gate_conv[2].bias, 2.0 + np.random.randn())
+        nn.init.constant_(self.action_conv[4].bias, -5.0 + np.random.randn())
 
         for params in [self.feature_conv.parameters(), \
                 self.gate_conv.parameters(), \
@@ -205,6 +209,78 @@ class ConvGRNNAgent(TrainAgent):
                     requires_grad=self.use_grad).to(param[:].device)
 
             param_start = param_stop
+
+    def update(self):
+        """
+        select champions and update the population distribution according to fitness
+
+        """
+        print("updating policy distribution")
+
+        sorted_indices = list(np.argsort(np.array(self.fitness)))
+
+        sorted_indices.reverse()
+
+        sorted_params = np.array(self.agents)[sorted_indices]
+
+        keep = self.population_size // 2
+
+        elite_means = np.mean(sorted_params[0:keep], axis=0, keepdims=True)
+
+        covariance = np.matmul(\
+                (elite_means - self.distribution[0]).T,
+                (elite_means - self.distribution[0]))
+
+        self.distribution = [elite_means.squeeze(), covariance]
+
+        save_mean_path = os.path.join(self.save_path, "grnn{}_mean_gen{}.npy"\
+                .format(self.tag, self.generation))
+        save_covar_path = os.path.join(self.save_path, "grnn{}_covar_gen{}.npy"\
+                .format(self.tag, self.generation))
+        save_params_path = os.path.join(self.save_path, "grnn{}_params_gen{}.npy"\
+                .format(self.tag, self.generation))
+
+        np.save(save_mean_path, self.distribution[0])
+        np.save(save_covar_path, self.distribution[1])
+        np.save(save_params_path, self.agents[0])
+
+        self.agents = []
+        self.fitness = [] 
+
+        print("gen. {} updated policy distribution".format(self.generation))
+        self.generation += 1
+
+    def step(self, rewards=None):
+        """
+        update agent(s)
+        this method is called everytime the CA universe is reset. 
+        """ 
+
+
+        if rewards is not None:
+            if type(rewards) == torch.Tensor:
+                fitness = np.sum(np.array(rewards.detach().cpu()))
+            else:
+                fitness = np.sum(np.array(rewards))
+        else:
+            fitness = np.random.randn(1)
+        
+        self.agents.append(self.get_params())
+        self.fitness.append(fitness)
+
+        if len(self.fitness) >= self.population_size:
+            self.update()
+            
+        if self.episodes <= self.max_episodes:
+            new_params = np.random.multivariate_normal(\
+                    self.distribution[0], self.distribution[1])
+            self.set_params(new_params)
+
+            self.episodes = 0
+
+        else:
+
+            self.episodes += 1
 
 
 class CMAPopulation():

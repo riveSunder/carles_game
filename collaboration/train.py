@@ -1,3 +1,4 @@
+import os
 import time
 
 import numpy as np
@@ -6,36 +7,36 @@ import torch
 import torch.nn as nn
 
 from carle.env import CARLE
-from carle.mcl import AE2D, RND2D
+from carle.mcl import AE2D, RND2D, CornerBonus
 
 from collaboration.agents import ConvGRNNAgent 
 
-def train():
+def train(wrappers = [AE2D, CornerBonus]):
 
-    max_generations = int(1e5)
-    max_steps = 1024
+    max_generations = int(1e3)
+    max_steps = 768
     my_instances = 4
     number_steps = 0
 
     # defin environment and exploration bonus wrappers
     env = CARLE(instances = my_instances, use_cuda = True)
 
-    if torch.cuda.is_available():
-        my_device = torch.device("cuda")
-    else:
-        my_device = torch.device("cpu")
+    my_device = env.my_device
 
-    env = RND2D(env)
-    env = AE2D(env)
+    for wrapper in wrappers:
 
+        env = wrapper(env)
 
-    agent = ConvGRNNAgent(instances=my_instances)
+    env.rules_from_string("B3/S345678")
+    
+    my_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),"../policies/")
+    agent = ConvGRNNAgent(instances=my_instances, save_path=my_path)
     agent.initialize_policy()
     agent.to(my_device)
     
 
-    agent.population_size = 8
-    agent.max_episodes = 1
+    agent.population_size = 16
+    agent.max_episodes = 2
 
     for generation in range(max_generations):
 
