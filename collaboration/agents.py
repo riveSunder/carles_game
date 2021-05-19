@@ -25,7 +25,7 @@ class TrainAgent(nn.Module):
                 if "action_height" in kwargs.keys()\
                 else 64
         self.observation_width = kwargs["observation_width"] \
-                if "observatoin_width" in kwargs.keys()\
+                if "observation_width" in kwargs.keys()\
                 else 256
         self.observation_height = kwargs["observation_height"] \
                 if "observation_height" in kwargs.keys()\
@@ -34,6 +34,8 @@ class TrainAgent(nn.Module):
                 if "instances" in kwargs.keys()\
                 else 1
 
+        self.my_device = torch.device(kwargs["device"]) if "device" in kwargs.keys()\
+                else torch.device("cpu")
 
         self.initialize_policy()
 
@@ -45,8 +47,7 @@ class TrainAgent(nn.Module):
 
         self.policy = torch.nn.Sequential(torch.nn.Linear(in_dim, hid_dim),\
                 torch.nn.ReLU(),\
-                torch.nn.Linear(hid_dim, out_dim),\
-                torch.nn.Sigmoid())
+                torch.nn.Linear(hid_dim, out_dim))
 
     def forward(self, obs):
 
@@ -58,6 +59,93 @@ class TrainAgent(nn.Module):
         action = 0.0 * (torch.rand_like(toggle_probability) <= toggle_probability)
 
         return action
+
+class CARLA(TrainAgent):
+    def __init__(self, **kwargs):
+        super(CARLA, self).__init__(**kwargs)
+
+        self.use_grad = False
+        self.population_size = 4
+        self.generation = 0
+        self.episodes = 0
+        self.max_episodes = 3
+        self.ca_steps = 8
+
+        self.agents = []
+        self.fitness = []
+
+        self.save_path = kwargs["save_path"] if "save_path" in kwargs.keys() else "" 
+
+    def initialize_policy(self):
+
+        self.perceive = nn.Conv2d(1, 9, 3, groups=1, padding=1, stride=1, \
+                padding_mode="circular", bias=False)
+
+        self.perceive.weight.requires_grad = False
+
+        self.perceive.weight.data.fill_(0)
+
+
+        for ii in range(9):
+            self.perceive.weight[ii, :, ii//3, ii%3].fill_(1)
+
+
+        self.perceive.to(self.my_device)
+
+
+        self.cellular_rules = nn.Sequential(nn.Conv2d(9, 64, 1, bias=False),\
+                nn.Tanh(),
+                nn.Conv2d(64, 9, 1, bias=False),
+                nn.Tanh())
+                
+
+        for param in self.cellular_rules.named_parameters():
+            param[1].requires_grad = False
+
+            if "bias" in param[0]:
+                param[1].data.fill_(-0.008)
+            
+
+    def forward(self, obs):
+        
+        my_grid = self.perceive(obs)
+
+        for jj in range(self.ca_steps):
+
+            my_grid = self.cellular_rules(my_grid)
+
+#            alive_mask = (my_grid[:,3:4,:,:] > 0.05).float()
+#            my_grid *= alive_mask
+
+        off_x = (obs.shape[2] - 64) // 2
+        off_y = (obs.shape[3] - 64) // 2
+
+        action = (my_grid[:,0:1,off_x:-off_x,off_y:-off_y] > 0.0).float()
+
+        return action
+
+    def get_params(self):
+        params = np.array([])
+
+        for param in self.cellular_rules.named_parameters():
+            params = np.append(params, param[1].detach().cpu().numpy().ravel())
+
+        return params
+
+    def set_params(self, my_params):
+
+        param_start = 0
+
+        for name, param in self.cellular_rules.named_parameters():
+
+            param_stop = param_start + reduce(lambda x,y: x*y, param.shape)
+
+            param[:] = torch.nn.Parameter(torch.tensor(\
+                    my_params[param_start:param_stop].reshape(param.shape), \
+                    requires_grad=self.use_grad), \
+                    requires_grad=self.use_grad).to(param[:].device)
+
+            param_start = param_stop
 
 class ConvGRNNAgent(TrainAgent):
     def __init__(self, **kwargs):
@@ -375,15 +463,19 @@ class CMAPopulation():
 
 if __name__ == "__main__":
 
-    agent = ConvGRNNAgent() 
+    agent = CARLA()
 
-    obs = 0.0 * (torch.rand(1, 1, agent.observation_height, agent.observation_width) < 0.1)
 
-    action = agent(obs)
     
-    for ii in range(4):
-        agent.step(rewards=torch.randn(10,))
-        print(len(agent.fitness))
 
-    agent.step(rewards=np.random.randn(np.random.randint(10),))
+    env = CARLE()
+    obs = env.reset()
 
+    obs  += (torch.rand(1,1,256,256) > 0.95).float()
+
+
+    for kk in range(8):
+        action = agent(obs)
+
+        print(action.sum())
+        obs, r, d, i = env.step(action)
