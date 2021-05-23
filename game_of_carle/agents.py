@@ -68,8 +68,8 @@ class CARLA(TrainAgent):
         self.population_size = 4
         self.generation = 0
         self.episodes = 0
-        self.max_episodes = 3
-        self.ca_steps = 8
+        self.max_episodes = 1
+        self.ca_steps = 2
 
         self.agents = []
         self.fitness = []
@@ -85,47 +85,61 @@ class CARLA(TrainAgent):
 
         self.perceive.weight.data.fill_(0)
 
-
         for ii in range(9):
             self.perceive.weight[ii, :, ii//3, ii%3].fill_(1)
-
 
         self.perceive.to(self.my_device)
 
 
-        self.cellular_rules = nn.Sequential(nn.Conv2d(9, 64, 1, bias=False),\
-                nn.Tanh(),
-                nn.Conv2d(64, 9, 1, bias=False),
-                nn.Tanh())
+        self.cellular_rules = nn.Sequential(nn.Conv2d(9, 32, 1, bias=False),\
+                nn.ReLU(),
+                nn.Conv2d(32, 9, 1, bias=True),
+                nn.Sigmoid())
                 
 
         for param in self.cellular_rules.named_parameters():
-            param[1].requires_grad = False
+            param[1].requires_grad = True
 
             if "bias" in param[0]:
-                param[1].data.fill_(-0.008)
+                param[1].data.fill_(param[1][0].item() - 16)
+
+        self.hallucinogen = torch.nn.parameter(torch.rand())
             
 
+    def hallucinate(self, obs):
+
+        obs = obs + (1.0 * (torch.rand_like(obs)  > self.hallucinogen)).float()
+
+        return obs 
+        
     def forward(self, obs):
         
+        if obs.sum() < 100:
+            obs = self.hallucinate(obs)
+
         my_grid = self.perceive(obs)
 
         for jj in range(self.ca_steps):
 
             my_grid = self.cellular_rules(my_grid)
 
-#            alive_mask = (my_grid[:,3:4,:,:] > 0.05).float()
-#            my_grid *= alive_mask
+            #alive_mask = (my_grid[:,3:4,:,:] > 0.05).float()
+            #my_grid *= alive_mask
 
         off_x = (obs.shape[2] - 64) // 2
         off_y = (obs.shape[3] - 64) // 2
 
-        action = (my_grid[:,0:1,off_x:-off_x,off_y:-off_y] > 0.0).float()
+        action_probabilities = my_grid[:,0:1,off_x:-off_x,off_y:-off_y]
+        
+        
+        action = (action_probabilities > 0.5).float()
 
         return action
 
     def get_params(self):
         params = np.array([])
+
+        params = np.append(self.hallucinogen)
 
         for param in self.cellular_rules.named_parameters():
             params = np.append(params, param[1].detach().cpu().numpy().ravel())
@@ -135,6 +149,10 @@ class CARLA(TrainAgent):
     def set_params(self, my_params):
 
         param_start = 0
+
+        self.hallucinogen = my_params[0]
+
+        param_start += 1
 
         for name, param in self.cellular_rules.named_parameters():
 
@@ -146,6 +164,12 @@ class CARLA(TrainAgent):
                     requires_grad=self.use_grad).to(param[:].device)
 
             param_start = param_stop
+
+
+class HARLI(CARLA):
+    """
+    Hebbian Automata Reinforcement Learning Intender
+    """
 
 class ConvGRNNAgent(TrainAgent):
     def __init__(self, **kwargs):

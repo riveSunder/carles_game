@@ -9,9 +9,10 @@ import torch.nn as nn
 from carle.env import CARLE
 from carle.mcl import AE2D, RND2D, CornerBonus
 
-from collaboration.agents import ConvGRNNAgent 
+from game_of_carle.agents import ConvGRNNAgent, CARLA 
+from game_of_carle.algos import CMAPopulation
 
-def train(wrappers = [AE2D, CornerBonus]):
+def train(wrappers = [CornerBonus]):
 
     max_generations = int(1e3)
     max_steps = 768
@@ -30,13 +31,17 @@ def train(wrappers = [AE2D, CornerBonus]):
     env.rules_from_string("B3/S345678")
     
     my_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),"../policies/")
-    agent = ConvGRNNAgent(instances=my_instances, save_path=my_path)
-    agent.initialize_policy()
-    agent.to(my_device)
+    #agent = ConvGRNNAgent(instances=my_instances, save_path=my_path)
+    agent = CMAPopulation(CARLA, device="cuda", save_path=my_path)
     
-
     agent.population_size = 16
-    agent.max_episodes = 2
+    agent.max_episodes = 1
+
+    results = {"generation": [],\
+            "fitness_max": [],\
+            "fitness_min": [],\
+            "fitness_mean": [],\
+            "fitness std. dev.": []}
 
     for generation in range(max_generations):
 
@@ -54,8 +59,8 @@ def train(wrappers = [AE2D, CornerBonus]):
             
             if number_steps >= max_steps:
                 number_steps = 0
-                agent.step(rewards)
                 reward_sum.append(np.sum(rewards.detach().cpu().numpy()))
+                agent.step(reward_sum[-1])
 
                 obs = env.reset()
                 rewards = torch.Tensor([]).to(my_device)
@@ -69,6 +74,13 @@ def train(wrappers = [AE2D, CornerBonus]):
 
         t1 = time.time()
 
+        results["generation"].append(generation)
+        results["fitness_max"].append(np.max(reward_sum))
+        results["fitness_min"].append(np.min(reward_sum))
+        results["fitness_mean"].append(np.mean(reward_sum))
+        results["fitness std. dev."].append(np.std(reward_sum))
+
+        np.save("carla_results.npy", results, allow_pickle=True)
 
         print("generation {}, mean, max, min, std. dev. fitness: ".format(generation), \
                  "{:.3e}, {:.3e}, {:.3e}, {:.3e}".format(\
