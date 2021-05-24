@@ -237,6 +237,9 @@ class HARLI(CARLA):
         self.hallucinogen = torch.nn.Parameter(torch.rand(1)/10,\
                 requires_grad=False).to(self.my_device)
 
+        self.bias_1 = torch.nn.Parameter(-torch.rand(1)/10,\
+                requires_grad=False).to(self.my_device)
+
     def hebbian_update(self):
         # update weights
 
@@ -286,7 +289,7 @@ class HARLI(CARLA):
 
             # second layer of ca policy rules 
             my_grid_11 = self.ca_1(my_grid_01)
-            my_grid_11 = self.act_1(my_grid_11-0.025)
+            my_grid_11 = self.act_1(my_grid_11 - self.bias_1)
 
             # second layer eligibility traces
             grid_11_mean = my_grid_11.mean(-1).mean(-1)
@@ -315,6 +318,7 @@ class HARLI(CARLA):
         params = np.array([])
 
         params = np.append(params, self.hallucinogen.cpu().numpy())
+        params = np.append(params, self.bias_1.cpu().numpy())
 
         params = np.append(params, self.eta_0.detach().cpu().numpy().ravel())
         params = np.append(params, self.a_0.detach().cpu().numpy().ravel())
@@ -334,9 +338,13 @@ class HARLI(CARLA):
 
         param_start = 0
 
-        self.hallucinogen = nn.Parameter(torch.Tensor(my_params[0:1])).to(self.my_device)
-
+        self.hallucinogen = nn.Parameter(torch.Tensor(my_params[0:1]), \
+                requires_grad=False).to(self.my_device)
         param_start = 1
+        self.bias_1 = nn.Parameter(torch.Tensor(my_params[1:2]), \
+                requires_grad=False).to(self.my_device)
+        param_start = 2
+
         param_stop = param_start + reduce(lambda x,y: x*y, self.eta_0.shape)
         self.eta_0 = nn.Parameter(torch.Tensor(my_params[param_start:param_stop])\
                 .reshape(self.eta_0.shape),\
@@ -640,7 +648,7 @@ if __name__ == "__main__":
     for kk in range(100):
         action = agent(obs)
 
-        #print(action.sum())
+        print(action.sum())
         obs, r, d, i = env.step(action)
     
     t3 = time.time()
@@ -659,7 +667,7 @@ if __name__ == "__main__":
     for kk in range(100):
         action = agent(obs)
 
-        #print(action.sum())
+        print(action.sum())
         obs, r, d, i = env.step(action)
 
     t1 = time.time()
