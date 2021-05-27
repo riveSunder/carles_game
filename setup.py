@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name="carles_game",\
-        packages=["game_of_carle"],\
+        packages=["game_of_carle", "experiments"],\
         install_requires=[\
                         "bokeh==2.3.1",\
                         "pandas==1.1.5",\
