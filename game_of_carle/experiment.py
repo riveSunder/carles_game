@@ -8,10 +8,12 @@ import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
 from carle.env import CARLE
-from carle.mcl import AE2D, RND2D, CornerBonus
+from carle.mcl import AE2D, RND2D, CornerBonus, PufferDetector, SpeedDetector
 
-from game_of_carle.agents import ConvGRNNAgent, CARLA, HARLI 
-from game_of_carle.algos import CMAPopulation
+from game_of_carle.agents.grnn import ConvGRNN
+from game_of_carle.agents.carla import CARLA 
+from game_of_carle.agents.harli import HARLI 
+from game_of_carle.algos.cma import CMAPopulation
 
 def train(wrappers = [CornerBonus], agent_fns=[HARLI, CARLA, ConvGRNNAgent], seeds=[13, 42]):
 
