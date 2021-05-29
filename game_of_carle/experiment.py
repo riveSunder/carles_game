@@ -97,6 +97,10 @@ def train(args):
                     "fitness std. dev.": []}
 
 
+            my_rules = np.random.choice(training_rules, \
+                    p=[1/len(training_rules)]*len(training_rules))
+            env.rules_from_string(my_rules)
+
             for generation in range(max_generations):
 
                 t0 = time.time()
@@ -125,7 +129,7 @@ def train(args):
 
                         obs = env.reset()
                         rewards = torch.Tensor([]).to(my_device)
-
+                    
                     action = agent(obs)
 
                     obs, reward, done, info = env.step(action)
