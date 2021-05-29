@@ -26,22 +26,39 @@ class Toggle(Agent):
 
         self.reset()
 
+    def sigmoid(self,x):
+        
+        return 1 / (1 + np.exp(-x))
+
     def initialize_policy(self):
 
-        self.toggles = np.random.rand(1, 1, \
-                self.action_height, self.action_width)
+        self.toggle_width = 32
+        assymetry_width = (self.action_width - self.toggle_width) % 2
+        assymetry_height = (self.action_height - self.toggle_width) % 2
+
+        width_padding = (self.action_width - self.toggle_width) // 2 
+        height_padding = (self.action_height - self.toggle_width) // 2
+
+        self.action_padding = nn.ZeroPad2d(padding=\
+                (height_padding, height_padding + assymetry_height,\
+                width_padding, width_padding + assymetry_width))
+
+        self.toggles = (np.random.rand(1, 1, \
+                self.toggle_width, self.toggle_width))
+
 
     def forward(self, obs):
 
         if self.first_step:
             action = torch.tensor(self.toggles > 0.5).float().to(self.my_device)
+            action = self.action_padding(action)
             action *= torch.ones(self.instances, 1, \
-                    self.action_height, self.action_width)
+                    self.action_height, self.action_width).to(self.my_device)
 
             self.first_step = False
         else: 
             action = torch.zeros(self.instances, 1, \
-                    self.action_height, self.action_width)
+                    self.action_height, self.action_width).to(self.my_device)
             
         return action
 
@@ -52,7 +69,10 @@ class Toggle(Agent):
     def set_params(self, params):
     
         self.toggles = params.reshape(1, 1, \
-                self.action_height, self.action_width)
+                self.toggle_width, self.toggle_width)
+
+        self.toggles = np.clip(self.toggles, 0.0, 1.0)
+
 
     def reset(self):
         
