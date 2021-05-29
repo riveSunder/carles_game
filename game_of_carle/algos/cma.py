@@ -18,9 +18,13 @@ class CMAPopulation():
         """
         """
         self.use_grad = False
-        self.population_size = 16
+        self.population_size = kwargs["population_size"] \
+                if "population_size" in kwargs.keys() else 16
         self.meta_index = 0
         self.generation = 0
+        self.l2_penalty = 1e0
+        self.lr = 1e-1
+
         self.elitism = True
 
         self.my_device = torch.device(device)
@@ -65,6 +69,11 @@ class CMAPopulation():
         print("updating policy distribution")
 
         self.agents = [agent.get_params() for agent in self.population]
+        
+        for hh in range(len(self.agents)):
+            self.fitness[hh] = self.fitness[hh] - self.l2_penalty * \
+                    np.sum((self.agents[hh])**2)
+
 
         sorted_indices = list(np.argsort(np.array(self.fitness)))
 
@@ -80,7 +89,10 @@ class CMAPopulation():
                 (elite_means - self.distribution[0]).T,
                 (elite_means - self.distribution[0]))
 
-        self.distribution = [elite_means.squeeze(), covariance]
+        new_means = (1-self.lr) * self.distribution[0] \
+                + self.lr * elite_means.squeeze()
+            
+        self.distribution = [new_means, covariance]
 
         save_mean_path = self.save_path + f"mean_gen{self.generation}.npy"
         save_covar_path = self.save_path + f"covar_gen{self.generation}.npy"
@@ -88,7 +100,7 @@ class CMAPopulation():
 
         np.save(save_mean_path, self.distribution[0])
         np.save(save_covar_path, self.distribution[1])
-        np.save(save_params_path, self.agents[0])
+        np.save(save_params_path, sorted_params[0])
 
         self.agents = []
         self.fitness = [] 
@@ -105,6 +117,7 @@ class CMAPopulation():
                     self.distribution[0], self.distribution[1]))
 
         self.generation += 1
+        self.meta_index = 0
 
     def step(self, rewards=[0,0,0,0.]):
         """
@@ -115,9 +128,10 @@ class CMAPopulation():
         if type(rewards) == list:
             self.fitness.extend(rewards)
         else:
-            self.fitness.append(np.sum(rewards))
+            self.fitness.append(np.sum(rewards)/rewards.shape[0])
 
-        if len(self.fitness) >= self.population_size * self.episodes:
+
+        if len(self.fitness) >= (self.population_size * self.episodes):
             if self.episodes > 1:
                 self.fitness = np.array(self.fitness).reshape(-1, self.population_size)
                 self.fitness = np.mean(self.fitness, axis=0)
@@ -125,8 +139,9 @@ class CMAPopulation():
             else:
                 self.update()
         else:
+            self.population[self.meta_index % self.population_size].reset()
             self.meta_index = len(self.fitness)
 
         # reset the next agent. used for random parameter initialization 
         # for Hebbian policies.
-        self.population[self.meta_index % self.population_size].reset()
+        self.population[(self.meta_index )% self.population_size].reset()
