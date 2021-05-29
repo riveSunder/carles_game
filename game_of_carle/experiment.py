@@ -1,5 +1,6 @@
 import os
 import time
+import argparse
 
 import numpy as np
 
@@ -10,73 +11,78 @@ from torch.utils.tensorboard import SummaryWriter
 from carle.env import CARLE
 from carle.mcl import AE2D, RND2D, CornerBonus, PufferDetector, SpeedDetector
 
+from game_of_carle.agents.toggle import Toggle
 from game_of_carle.agents.grnn import ConvGRNN
 from game_of_carle.agents.carla import CARLA 
 from game_of_carle.agents.harli import HARLI 
 from game_of_carle.algos.cma import CMAPopulation
 
-def train(wrappers = [CornerBonus], agent_fns=[HARLI, CARLA, ConvGRNNAgent], seeds=[13, 42]):
+WRAPPER_DICT = { \
+        "cornerbonus": CornerBonus, \
+        "ae2d": AE2D, \
+        "rnd2d": RND2D, \
+        "pufferdetector": PufferDetector, \
+        "speeddetector": SpeedDetector \
+        }
 
-    max_generations = int(256)
-    max_steps = 512
-    my_instances = 1
-    number_steps = 0
+AGENT_DICT = { \
+        "harli": HARLI, \
+        "carla": CARLA, \
+        "convgrnn": ConvGRNN, \
+        "toggle": Toggle \
+        }
+
+def train(args): 
+    
+    # parse arguments
+    max_generations =  args.max_generations
+    max_steps = args.max_steps
+    population_size = args.population_size
+    my_instances = args.vectorization
+    seeds = args.seeds
+    device = args.device
+    env_dimension = args.env_dimension
+    agents = [AGENT_DICT[key.lower()] for key in args.agents]
+    wrappers = [WRAPPER_DICT[key.lower()] for key in args.wrappers]
+    training_rules = args.training_rules
+    validation_rules = args.validation_rules
+    testing_rules = args.testing_rules
 
 
     # define environment and exploration bonus wrappers
-    env = CARLE(instances = my_instances, use_cuda = True, height=128, width=128)
+    env = CARLE(instances = my_instances, device=device, \
+            height=env_dimension, width=env_dimension)
 
     my_device = env.my_device
 
     for wrapper in wrappers:
-
         env = wrapper(env)
-
-    test_rules = ["B3/S012345678", "B3/S345678"]
-
-    validation_rules = [\
-            "B3/S145678",\
-#            "B3/S12345678",\
-#            "B3/S0245678",\
-#            "B3/S01345678"\
-            ]
-
-    training_rules = [\
-#            "B3/S245678",\
-#            "B3/S2345678",\
-#            "B3/S1345678",\
-#            "B3/S1245678",\
-#            "B3/S045678",\
-#            "B3/S0345678",\
-#            "B3/S02345678",\
-            "B3/S0145678",\
-            #"B3/S01245678",\
-            ]
 
     for my_seed in seeds:
 
         np.random.seed(my_seed)
         torch.manual_seed(my_seed)
 
-        for agent_fn in agent_fns:
+        for agent_fn in agents:
 
             time_stamp = int(time.time())
 
-            agent = CMAPopulation(agent_fn, device="cuda", episodes=4)
+            agent = CMAPopulation(agent_fn, device=device, \
+                    episodes=1, population_size=population_size)
 
-            experiment_name = agent.population[0].__class__.__name__ + f"_{my_seed}_{time_stamp}"
+            tag = args.tag + str(int(time.time()))
+            experiment_name = agent.population[0].__class__.__name__ + f"_{my_seed}_{tag}"
             my_file_path = os.path.abspath(os.path.dirname(__file__))
             my_directory_path = os.path.join(my_file_path, "../policies/")
             my_save_path = os.path.join(my_directory_path, experiment_name)
 
             agent.save_path = my_save_path
-            
-            agent.population_size = 16
+            agent.population_size = population_size
 
             # with a vectorization of 4, don't need to repeat "episodes"
             agent.max_episodes = 4
 
-            writer_path = "/".join(my_file_path.split("/")[:-1])
+            writer_path = os.path.sep.join(my_file_path.split(os.path.sep)[:-1])
             writer_path = os.path.join(writer_path, f"experiments/logs/{experiment_name}")
 
             
@@ -90,7 +96,7 @@ def train(wrappers = [CornerBonus], agent_fns=[HARLI, CARLA, ConvGRNNAgent], see
                     "fitness_mean": [],\
                     "fitness std. dev.": []}
 
-            tag = str(int(time.time()))
+
             for generation in range(max_generations):
 
                 t0 = time.time()
@@ -205,4 +211,32 @@ def train(wrappers = [CornerBonus], agent_fns=[HARLI, CARLA, ConvGRNNAgent], see
 
 if __name__ == "__main__":
 
-    train()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-mg", "--max_generations", type=int, default=10)
+    parser.add_argument("-ms", "--max_steps", type=int, default=512)
+    parser.add_argument("-p", "--population_size", type=int, default=16)
+    parser.add_argument("-v", "--vectorization", type=int, default=1)
+    parser.add_argument("-s", "--seeds", type=int, nargs="+", default=[13])
+    parser.add_argument("-d", "--device", type=str, default="cuda:1")
+    parser.add_argument("-dim", "--env_dimension", type=int, default=256)
+    parser.add_argument("-a", "--agents", type=str, nargs="+", \
+            default=["Toggle", "HARLI"], \
+            help="agent(s) to train in experiment, can be several")
+    parser.add_argument("-w", "--wrappers", type=str, nargs="+", \
+            default=["CornerBonus"], help="reward wrappers to train with")
+    parser.add_argument("-tr", "--training_rules", type=str, nargs="+", \
+            default=["B3/S23"], \
+            help="B/S string(s) defining CA rules to use during training")
+    parser.add_argument("-vr", "--validation_rules", type=str, nargs="+", \
+            default=["B3/S23"], \
+            help="B/S string(s) defining CA rules to use during validation")
+    parser.add_argument("-xr", "--testing_rules", type=str, nargs="+", \
+            default=["B3/S23"], \
+            help="B/S string(s) defining CA rules to use during testing")
+
+    parser.add_argument("-tag", "--tag", type=str, default="default_tag", \
+            help="a tag to identify the experiment")
+
+    args = parser.parse_args()
+    train(args)
