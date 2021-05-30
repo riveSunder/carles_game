@@ -128,7 +128,7 @@ class CMAPopulation():
         if type(rewards) == list:
             self.fitness.extend(rewards)
         else:
-            self.fitness.append(np.sum(rewards)/rewards.shape[0])
+            self.fitness.append(np.sum(rewards))
 
 
         if len(self.fitness) >= (self.population_size * self.episodes):

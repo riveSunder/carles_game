@@ -124,7 +124,7 @@ def train(args):
                             env.rules_from_string(my_rules)
 
                         number_steps = 0
-                        reward_sum.append(np.sum(rewards.detach().cpu().numpy()))
+                        reward_sum.append(np.mean(rewards.detach().cpu().numpy()))
                         agent.step(reward_sum[-1])
 
                         obs = env.reset()
