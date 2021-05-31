@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(name="carles_game",\
         packages=["game_of_carle", "experiments"],\
