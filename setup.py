@@ -1,9 +1,10 @@
 from setuptools import setup, find_packages
 
 setup(name="carles_game",\
-        packages=["submission", "collaboration"],\
+        packages=["game_of_carle", "experiments"],\
         install_requires=[\
                         "bokeh==2.3.1",\
+                        "pandas==1.1.5",\
                         "jupyter==1.0.0",\
                         "notebook==6.3.0",\
                         "numpy==1.18.4",\
