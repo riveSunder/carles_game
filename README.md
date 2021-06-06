@@ -81,4 +81,4 @@ jupyter notebook
 
 However the scheme for running on notebook server [mybinder.org](https://mybinder.org) is a little more involved and uses `bokeh serve`. You can create an interactive bokeh app server on mybinder by following the link below.
 
-[`https://mybinder.org/v2/gh/riveSunder/carles_game/master?urlpath=/proxy/5006/bokeh-app`](https://mybinder.org/v2/gh/riveSunder/carles_game/master?urlpath=/proxy/5006/bokeh-app)
+[`https://mybinder.org/v2/gh/riveSunder/carles_game/c3ce51070425ddf99c2a8463c5106cdbd2ed8f61?urlpath=/proxy/5006/bokeh-app`](https://mybinder.org/v2/gh/riveSunder/carles_game/c3ce51070425ddf99c2a8463c5106cdbd2ed8f61?urlpath=/proxy/5006/bokeh-app)
