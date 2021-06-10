@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import argparse
 
@@ -35,6 +36,7 @@ AGENT_DICT = { \
 def train(args): 
     
     # parse arguments
+    episodes = args.episodes
     max_generations =  args.max_generations
     max_steps = args.max_steps
     population_size = args.population_size
@@ -68,13 +70,24 @@ def train(args):
             time_stamp = int(time.time())
 
             agent = CMAPopulation(agent_fn, device=device, \
-                    episodes=1, population_size=population_size)
+                    episodes=episodes, population_size=population_size)
 
             tag = args.tag + str(int(time.time()))
-            experiment_name = agent.population[0].__class__.__name__ + f"_{my_seed}_{tag}"
+            experiment_name = agent.population[0].__class__.__name__ + \
+                    f"_{my_seed}_{tag}"
             my_file_path = os.path.abspath(os.path.dirname(__file__))
             my_directory_path = os.path.join(my_file_path, "../policies/")
             my_save_path = os.path.join(my_directory_path, experiment_name)
+
+            my_meta_path = os.path.join(\
+                    os.path.sep.join(my_file_path.split(os.path.sep)[:-1]), \
+                    "experiments", f"args_{experiment_name}")
+
+            with open(my_meta_path, "w") as f:
+                my_module = sys.argv[0].split(os.path.sep)[-1]
+                f.write(my_module)
+                for my_arg in sys.argv[1:]:
+                    f.write(f" {my_arg} ")
 
             agent.save_path = my_save_path
             agent.population_size = population_size
@@ -222,6 +235,7 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--population_size", type=int, default=16)
     parser.add_argument("-v", "--vectorization", type=int, default=1)
     parser.add_argument("-s", "--seeds", type=int, nargs="+", default=[13])
+    parser.add_argument("-e", "--episodes", type=int, default=[1])
     parser.add_argument("-d", "--device", type=str, default="cuda:1")
     parser.add_argument("-dim", "--env_dimension", type=int, default=256)
     parser.add_argument("-a", "--agents", type=str, nargs="+", \
@@ -243,4 +257,5 @@ if __name__ == "__main__":
             help="a tag to identify the experiment")
 
     args = parser.parse_args()
+
     train(args)
