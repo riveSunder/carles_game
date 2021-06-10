@@ -20,12 +20,12 @@ class CMAPopulation():
         self.use_grad = False
         self.population_size = kwargs["population_size"] \
                 if "population_size" in kwargs.keys() else 16
+        self.elitism = kwargs["elitism"] if "elitism" in kwargs.keys() else True
         self.meta_index = 0
         self.generation = 0
         self.l2_penalty = 1e0
         self.lr = 1e-1
 
-        self.elitism = True
 
         self.my_device = torch.device(device)
         self.device = device
@@ -107,14 +107,21 @@ class CMAPopulation():
 
         print("gen. {} updated policy distribution".format(self.generation))
 
-        #for mm in range(2):
-            # elitism: keep the best 25% of agents
+        population_count = 0
+        if self.elitism:
 
-        #    self.population[mm].set_params(sorted_params[mm])
+            while population_count < (keep // 2):
+                # elitism: keep the best agents
 
-        for nn in range(2, self.population_size):
-            self.population[nn].set_params(np.random.multivariate_normal(\
+                self.population[population_count]\
+                        .set_params(sorted_params[population_count])
+
+                population_count += 1
+
+        while population_count < self.population_size:
+            self.population[population_count].set_params(np.random.multivariate_normal(\
                     self.distribution[0], self.distribution[1]))
+            population_count += 1
 
         self.generation += 1
         self.meta_index = 0
