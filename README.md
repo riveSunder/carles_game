@@ -1,25 +1,25 @@
 # Carle's Game
 
 <div align="center">
-<img src="assets/printB3_S345678_2312_1623293704.png" width=80%>
+<img src="assets/printB3_S345678_2312_1623293704.png">
 </div>
 
 It was pretty cool when AlphaGo began to beat world-class human Go players. It was even cooler when successive iterations in the AlphaGo lineage were able to play even better without relying on a pre-programmed model of the game rules, especially when MuZero showed it could use the same algorithm and architecture to learn to play Go, chess, shogi, and a suite of Atari games. But each instance of MuZero is still limited to playing in the specialized domain it is trained on, and even expert-level game-playing is a very small corner of intelligence and only an infinitesmal slice of all the interesting things an intelligent agent can do in this universe. Playing the game of Go isn't even the most interesting or impressive thing one can do with a Go board. 
 
 <div align="center">
-<img src="assets/printB3_S23_273_1623297252.png" width=80%>
+<img src="assets/printB3_S23_273_1623297252.png">
 </div>
 
 The mathematician John H. Conway famously developed the [Game of Life](https://web.stanford.edu/class/sts145/Library/life.pdf) by playing with simple rules and applying them to the stones on a Go board. Over time the capabilities of Life as a computational platform were proven and explored, inspiring an explosion of creative and theoretical work in cellular automata, an impressive achievement that Conway was begrudgingly haunted by for the rest of his life. Proofs of Turing-completeness for Life-like cellular automata continue to be published on internet forums to this day. Interestingly enough the standard way to demonstrate Turing-completeness of a cellular automaton rule set is to design a pattern that can simulate another cellular automata that has already had its computational universality _bona fides_ proven. The many universes of cellular automata have proven to be a rich landscape for creative and intelligent exploration by humans, and Carle's Game proposes that automata offer the same rich possibilities for machine intelligence.
 
 <div align="center">
-<img src="assets/printB368_245_79_1623297798.png" width=80%>
+<img src="assets/printB368_245_79_1623297798.png">
 </div>
 
 Imagine an agent that finds itself in a totally novel universe. The universe is not random, rather it behaves according to some set of definite rules. These rules are unknown to the agent, however they do apply equally to every corner of this universe. At least, the rules would be the same at every corner, if only the universe had corners, but instead it is a 2-dimennsional grid on a torus manifold. There is no gravity, but this universe does have a maximum speed at which information can travel, a "speed of light". What could an intelligent agent learn and build in such a universe? And what happens if the same agent, after exploring a given universe for a while, finds itself deposited in a totally new universe with different physics?
 
 <div align="center">
-<img src="assets/printB3_S023_345_1623297253.png" width=80%>
+<img src="assets/printB3_S023_345_1623297253.png">
 </div>
 
 This is the premise of Carle's Game. Carle's Game is an open-ended challenge in creative and exploratory machine intelligence.
