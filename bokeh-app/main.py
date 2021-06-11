@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from carle.env import CARLE
-from submission.agents import SubmissionAgent
+from game_of_carle.agents.submission_agents import SubmissionAgent
 
 import bokeh
 import bokeh.io as bio
