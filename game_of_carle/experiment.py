@@ -40,6 +40,7 @@ def train(args):
     max_generations =  args.max_generations
     max_steps = args.max_steps
     population_size = args.population_size
+    selection_mode = args.selection_mode
     my_instances = args.vectorization
     seeds = args.seeds
     device = args.device
@@ -70,7 +71,8 @@ def train(args):
             time_stamp = int(time.time())
 
             agent = CMAPopulation(agent_fn, device=device, \
-                    episodes=episodes, population_size=population_size)
+                    episodes=episodes, population_size=population_size, \
+                    selection_mode=selection_mode)
 
             tag = args.tag + str(int(time.time()))
             experiment_name = agent.population[0].__class__.__name__ + \
@@ -233,9 +235,10 @@ if __name__ == "__main__":
     parser.add_argument("-mg", "--max_generations", type=int, default=10)
     parser.add_argument("-ms", "--max_steps", type=int, default=512)
     parser.add_argument("-p", "--population_size", type=int, default=16)
+    parser.add_argument("-sm", "--selection_mode", type=int, default=1) 
     parser.add_argument("-v", "--vectorization", type=int, default=1)
     parser.add_argument("-s", "--seeds", type=int, nargs="+", default=[13])
-    parser.add_argument("-e", "--episodes", type=int, default=[1])
+    parser.add_argument("-e", "--episodes", type=int, default=1)
     parser.add_argument("-d", "--device", type=str, default="cuda:1")
     parser.add_argument("-dim", "--env_dimension", type=int, default=256)
     parser.add_argument("-a", "--agents", type=str, nargs="+", \

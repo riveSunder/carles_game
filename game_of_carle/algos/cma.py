@@ -21,11 +21,22 @@ class CMAPopulation():
         self.population_size = kwargs["population_size"] \
                 if "population_size" in kwargs.keys() else 16
         self.elitism = kwargs["elitism"] if "elitism" in kwargs.keys() else True
+
+        # selection mode, implemented options:
+        # 0 - truncation
+        # 1 - tournament selection, bracket size = 1/4 population size 
+        # planned options:
+        # 2 - fitness_proportional
+        # 
+        self.selection_mode = kwargs["selection_mode"] \
+                if "selection_mode" in kwargs.keys() else 0
+
+        self.l2_penalty = kwargs["l2"] if "l2" in kwargs.keys() else 1e0
+        self.l1_penalty = kwargs["l1"] if "l1" in kwargs.keys() else 1e0
+        self.lr = kwargs["lr"] if "lr" in kwargs.keys() else 1e-1
+
         self.meta_index = 0
         self.generation = 0
-        self.l2_penalty = 1e0
-        self.lr = 1e-1
-
 
         self.my_device = torch.device(device)
         self.device = device
@@ -71,17 +82,31 @@ class CMAPopulation():
         self.agents = [agent.get_params() for agent in self.population]
         
         for hh in range(len(self.agents)):
+            # l1 and l2 penalties
             self.fitness[hh] = self.fitness[hh] - self.l2_penalty * \
-                    np.sum((self.agents[hh])**2)
+                    np.sum(np.abs(self.agents[hh])**2)
+            self.fitness[hh] = self.fitness[hh] - self.l1_penalty * \
+                    np.sum(np.abs(self.agents[hh]))
 
-
-        sorted_indices = list(np.argsort(np.array(self.fitness)))
-
-        sorted_indices.reverse()
-
-        sorted_params = np.array(self.agents)[sorted_indices]
 
         keep = self.population_size // 4
+
+        if self.selection_mode == 0: 
+            sorted_indices = list(np.argsort(np.array(self.fitness)))
+
+            sorted_indices.reverse()
+
+            sorted_params = np.array(self.agents)[sorted_indices]
+
+        elif self.selection_mode == 1:
+            sorted_params = []
+
+            for gg in range(0, self.population_size, self.population_size // keep):
+                
+                sorted_params.append(self.agents[\
+                        np.argmax(self.fitness[gg:gg + keep])])
+
+
 
         elite_means = np.mean(sorted_params[0:keep], axis=0, keepdims=True)
 
