@@ -34,22 +34,19 @@ class CMAPopulation():
         self.l2_penalty = kwargs["l2"] if "l2" in kwargs.keys() else 1e0
         self.l1_penalty = kwargs["l1"] if "l1" in kwargs.keys() else 1e0
         self.lr = kwargs["lr"] if "lr" in kwargs.keys() else 1e-1
+        self.episodes = kwargs["episodes"] if "episodes" in kwargs.keys() else 1
+        self.save_path = kwargs["save_path"] if "save_path" in kwargs.keys() else "" 
 
-        self.meta_index = 0
-        self.generation = 0
 
         self.my_device = torch.device(device)
         self.device = device
 
-        self.episodes = kwargs["episodes"] if "episodes" in kwargs.keys() else 1
-        self.save_path = kwargs["save_path"] if "save_path" in kwargs.keys() else "" 
-
-        self.agents = []
-        self.fitness = []
         
-        self.population = [agent_fn(device=self.device) for ii in range(self.population_size)]
+        self.agent_fn = agent_fn
+        self.meta_index = 0
+        self.generation = 0
+        self.start_over() 
 
-        self.tag = int(time.time())
 
         for kk in range(self.population_size):
             self.population[kk].to(self.device)
@@ -71,6 +68,15 @@ class CMAPopulation():
                 % self.population_size](obs)
 
         return action
+
+    def start_over(self):
+
+        self.tag = int(time.time())
+        self.agents = []
+        self.fitness = []
+        self.population = [self.agent_fn(device=self.device) for ii in range(self.population_size)]
+        self.meta_index = 0
+        self.generation = 0
 
     def update(self):
         """

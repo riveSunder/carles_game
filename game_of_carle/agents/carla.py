@@ -54,11 +54,10 @@ class CARLA(Agent):
             param[1].requires_grad = False
 
             if "bias" in param[0]:
-                param[1].data.fill_(param[1][0].item() - 0.05)
+                param[1].data.fill_(param[1][0].item() - 0.075)
 
-        self.hallucinogen = torch.nn.Parameter(torch.rand(1)/10,\
+        self.hallucinogen = torch.nn.Parameter(torch.rand(1)/5,\
                 requires_grad=False).to(self.my_device)
-            
 
     def hallucinate(self, obs):
 
@@ -105,8 +104,10 @@ class CARLA(Agent):
 
         param_start = 0
 
+        my_params[0] = np.clip(my_params[0], 0.0025, .90)
         self.hallucinogen = nn.Parameter(torch.Tensor(my_params[0:1]), \
                 requires_grad=False).to(self.my_device)
+
 
         param_start += 1
 
