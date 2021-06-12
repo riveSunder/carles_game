@@ -151,6 +151,9 @@ class CMAPopulation():
         self.generation += 1
         self.meta_index = 0
 
+        for ii in range(len(self.population)):
+            self.population[ii].reset()
+
     def step(self, rewards=[0,0,0,0.]):
         """
         update agent(s)
