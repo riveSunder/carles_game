@@ -69,7 +69,7 @@ class Toggle(Agent):
     def set_params(self, params):
     
         self.toggles = params.reshape(1, 1, \
-                self.toggle_width, self.toggle_width)
+                self.toggle_height, self.toggle_width)
 
         self.toggles = np.clip(self.toggles, 0.0, 1.0)
 
@@ -77,6 +77,52 @@ class Toggle(Agent):
     def reset(self):
         
         self.first_step = True
+
+class BilateralToggle(Toggle):
+
+    def __init__(self, **kwargs):
+
+        super(BilateralToggle, self).__init__(**kwargs)
+
+    def initialize_policy(self):
+
+        self.toggle_width = 16
+        self.toggle_height = 32
+
+        self.width_padding = (self.action_width - self.toggle_width) 
+        self.height_padding = (self.action_height - self.toggle_height)
+
+        self.toggles = (np.random.rand(1, 1, \
+                self.toggle_height, self.toggle_width))
+
+    def action_padding(self, action):
+
+        padded = torch.zeros(1, 1, self.action_height, self.action_width)
+
+        padded[:,:, 16:48, 16:16+self.toggle_width] = action
+
+        for ii in range(self.toggle_width):
+
+            padded[:,:,16:48, 16+self.toggle_width + ii]  =\
+                        action[:,:,:, self.toggle_width - ii-1] 
+
+        return padded
+
+
+    def forward(self, obs):
+
+        if self.first_step:
+            action = torch.tensor(self.toggles > 0.5).float().to(self.my_device)
+            action = self.action_padding(action)
+            action *= torch.ones(self.instances, 1, \
+                    self.action_height, self.action_width).to(self.my_device)
+
+            self.first_step = False
+        else: 
+            action = torch.zeros(self.instances, 1, \
+                    self.action_height, self.action_width).to(self.my_device)
+            
+        return action
 
 if __name__ == "__main__":
     
