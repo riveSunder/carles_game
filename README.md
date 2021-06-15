@@ -1,5 +1,7 @@
 # Carle's Game
 
+* Check out the example submission [moving_in_morley](https://github.com/rivesunder/moving_in_morley), in which I used a covariance matrix adaptation evolution strategy to search for initial patterns that yield mobile artifacts. (If you want).
+
 <div align="center">
 <img src="assets/printB3_S345678_2312_1623293704.png">
 </div>
