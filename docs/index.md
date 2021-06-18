@@ -1,5 +1,5 @@
 
-# Carle's Game Blog
+<!-- # Carle's Game Blog--> 
 
 ## An Open-Ended Challenge in Simple Complexity, Exploration, and Machine Creativity
 
