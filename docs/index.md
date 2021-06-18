@@ -1,37 +1,7 @@
-## Welcome to GitHub Pages
 
-You can use the [editor on GitHub](https://github.com/riveSunder/carles_game/edit/master/docs/index.md) to maintain and preview the content for your website in Markdown files.
+# Carle's Game Blog
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+## An Open-Ended Challenge in Simple Complexity, Exploration, and Machine Creativity
 
-### Markdown
+Carle's Game is an open-ended challenge for creative machine intelligence based on the Cellular Automata Reinforcement Learning Environment ([CARLE](https://github.com/riveSunder/carle)). CARLE is a flexible, fast environment that supports arbitrary Life-like cellular automata (CA) rule sets, and the Carle's Game challenge is part of the [IEEE 2021 Conference on Games](https://ieee-cog.org/2021/). Check out the challenge guidelines in the [project README](https://github.com/riveSunder/carles_game#readme), submit an entry to the challenge by [opening an issue](https://github.com/riveSunder/carles_game/issues) and linking to your work, check out the [example](https://github.com/rivesunder/moving_in_morley) [submissions](https://github.com/rivesunder/harli_learning), join/start a [discussion](https://github.com/riveSunder/carles_game/discussions/), or just silently check out the project without ever telling anyone you were here. 
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
-
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/riveSunder/carles_game/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
