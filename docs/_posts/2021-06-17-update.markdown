@@ -1,0 +1,21 @@
+---
+layout: post
+title: "Update 2021-06-17: Blog update and example submissions." 
+date: 2021-06-17 00:00:00 +0000
+categories: updates
+---
+
+<div align="center">
+<img src="https://raw.githubusercontent.com/riveSunder/carles_game/master/assets/judgy_alien.png" width=30%>
+</div>
+
+### Carle's Game blog moved to [https://rivesunder.github.io/carles_game](https://rivesunder.github.io/carles_game)
+
+### Example submission: glider/spaceship search in B368/S245 with Covariance Matrix Adaptation Evolution Strategy
+Check it out at [https://github.com/rivesunder/moving_in_morley](https://github.com/rivesunder/moving_in_morley)
+
+### Example submission: specification gaming by a Hebbian cellular automaton agent policy with the `SpeedDetector` reward wrapper.
+
+Check it out at [https://github.com/rivesunder/harli_learning](https://github.com/rivesunder/harli_learning)
+
+

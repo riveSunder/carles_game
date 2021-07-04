@@ -1,0 +1,15 @@
+title: Carle's Game Blog
+theme: minima
+#theme: jekyll-theme-minimal
+logo: /carles_game/assets/flying_brain.png
+
+#email: your-email@example.com
+baseurl: "/carles_game"
+url: "https://rivesunder.github.io/"
+twitter_username: rivesunder
+github_username:  rivesunder
+
+# Build settings
+markdown: kramdown
+plugins:
+  - jekyll-feed
