@@ -6,7 +6,7 @@ categories: updates
 ---
 
 <div align="center">
-<img src="/carles_game/assets/judgy_alien.png">
+<img src="https://raw.githubusercontent.com/riveSunder/carles_game/master/assets/judgy_alien.png" width=30%>
 </div>
 
 ### Carle's Game blog moved to [https://rivesunder.github.io/carles_game](https://rivesunder.github.io/carles_game)
