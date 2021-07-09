@@ -68,7 +68,14 @@ virtualenv carles_venv --python=python3
 source carles_venv/bin/activate 
 ```
 
-Note that I am using Ubuntu 18. If you are using a different operating system and/or have a different experience setting up or using CARLE and Carle's Game, feel free to send me your notes (go ahead and open an issue) and I will update the installation instructions here. 
+Using [anaconda](https://www.anaconda.com/) as your python environment manager, installation is much the same:
+
+```
+conda create -n carles_game
+conda activate carles_game
+```
+
+Note that I am using Ubuntu 18. If you are using a different operating system and/or have a different experience setting up or using CARLE and Carle's Game, feel free to send me your notes (go ahead and open an issue) and I will update the installation instructions here. Regardless of whether you are using conda or virtualenv, the easiest way to install `CARLE`, `carles_game`, and dependencies is by using pip (but note [this guidance](https://www.anaconda.com/blog/using-pip-in-a-conda-environment) from the Anaconda blog).
 
 ```
 git clone  https://github.com/riveSunder/carles_game.git
@@ -82,8 +89,8 @@ cd carle
 
 pip install -e .
 
-# run tests if you want
-python -m test.test_all
+# run tests if you want. I admit that the test coverage is virtually non-existent :\
+python -m tests.test_all
 
 # go back to the root directory and see if CARLE is working
 cd ../
