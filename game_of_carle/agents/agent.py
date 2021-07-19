@@ -15,6 +15,10 @@ class Agent(nn.Module):
     def __init__(self, **kwargs):
         super(Agent, self).__init__()
 
+        self.use_grad = kwargs["use_grad"] \
+                if "use_grad" in kwargs.keys() else False
+        self.lr = kwargs["lr"] if "lr" in kwargs.keys() else 1e-4
+
         self.action_width = kwargs["action_width"] \
                 if "action_width" in kwargs.keys()\
                 else 64
@@ -36,9 +40,6 @@ class Agent(nn.Module):
 
         self.initialize_policy()
 
-    def reset(self):
-        pass
-
     def initialize_policy(self):
 
         in_dim = self.observation_width * self.observation_height
@@ -48,6 +49,16 @@ class Agent(nn.Module):
         self.policy = torch.nn.Sequential(torch.nn.Linear(in_dim, hid_dim),\
                 torch.nn.ReLU(),\
                 torch.nn.Linear(hid_dim, out_dim))
+
+    def initialize_optimizer(self):
+        pass
+
+    def step(self, reward):
+        pass
+
+    def reset(self):
+        pass
+
 
     def forward(self, obs):
 
