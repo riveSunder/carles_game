@@ -17,7 +17,8 @@ class CMAPopulation():
     def __init__(self, agent_fn, device="cpu", **kwargs):
         """
         """
-        self.use_grad = False
+        self.use_grad = kwargs["use_grad"] \
+                if "use_grad" in kwargs.keys() else False
         self.population_size = kwargs["population_size"] \
                 if "population_size" in kwargs.keys() else 16
         self.elitism = kwargs["elitism"] if "elitism" in kwargs.keys() else True
@@ -31,8 +32,8 @@ class CMAPopulation():
         self.selection_mode = kwargs["selection_mode"] \
                 if "selection_mode" in kwargs.keys() else 0
 
-        self.l2_penalty = kwargs["l2"] if "l2" in kwargs.keys() else 1e0
-        self.l1_penalty = kwargs["l1"] if "l1" in kwargs.keys() else 1e0
+        self.l2_penalty = kwargs["l2"] if "l2" in kwargs.keys() else 1e-10
+        self.l1_penalty = kwargs["l1"] if "l1" in kwargs.keys() else 1e-10
         self.lr = kwargs["lr"] if "lr" in kwargs.keys() else 1e-1
         self.episodes = kwargs["episodes"] if "episodes" in kwargs.keys() else 1
         self.save_path = kwargs["save_path"] if "save_path" in kwargs.keys() else "" 
@@ -74,7 +75,8 @@ class CMAPopulation():
         self.tag = int(time.time())
         self.agents = []
         self.fitness = []
-        self.population = [self.agent_fn(device=self.device) for ii in range(self.population_size)]
+        self.population = [self.agent_fn(device=self.device, use_grad=self.use_grad) \
+                for ii in range(self.population_size)]
         self.meta_index = 0
         self.generation = 0
 
@@ -166,11 +168,13 @@ class CMAPopulation():
         this method is called everytime the CA universe is reset. 
         """ 
 
+        if self.use_grad:
+            self.population[self.meta_index % self.population_size].step(rewards)
+
         if type(rewards) == list:
             self.fitness.extend(rewards)
         else:
             self.fitness.append(np.sum(rewards))
-
 
         if len(self.fitness) >= (self.population_size * self.episodes):
             if self.episodes > 1:

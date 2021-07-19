@@ -10,7 +10,13 @@ import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
 from carle.env import CARLE
-from carle.mcl import AE2D, RND2D, CornerBonus, PufferDetector, SpeedDetector
+from carle.mcl import AE2D, \
+        RND2D, \
+        CornerBonus, \
+        PufferDetector, \
+        SpeedDetector, \
+        MorphoBonus
+
 
 from game_of_carle.agents.toggle import Toggle
 from game_of_carle.agents.grnn import ConvGRNN
@@ -23,7 +29,8 @@ WRAPPER_DICT = { \
         "ae2d": AE2D, \
         "rnd2d": RND2D, \
         "pufferdetector": PufferDetector, \
-        "speeddetector": SpeedDetector \
+        "speeddetector": SpeedDetector, \
+        "morphobonus": MorphoBonus \
         }
 
 AGENT_DICT = { \
@@ -44,6 +51,7 @@ def train(args):
     my_instances = args.vectorization
     seeds = args.seeds
     device = args.device
+    use_grad = args.use_grad
     env_dimension = args.env_dimension
     agents = [AGENT_DICT[key.lower()] for key in args.agents]
     wrappers = [WRAPPER_DICT[key.lower()] for key in args.wrappers]
@@ -51,6 +59,9 @@ def train(args):
     validation_rules = args.validation_rules
     testing_rules = args.testing_rules
 
+
+    if use_grad:
+        print(f"use grad == {use_grad} is true")
 
     # define environment and exploration bonus wrappers
     env = CARLE(instances = my_instances, device=device, \
@@ -71,8 +82,10 @@ def train(args):
             time_stamp = int(time.time())
 
             agent = CMAPopulation(agent_fn, device=device, \
-                    episodes=episodes, population_size=population_size, \
-                    selection_mode=selection_mode)
+                    episodes=episodes, \
+                    population_size=population_size, \
+                    selection_mode=selection_mode, \
+                    use_grad=use_grad)
 
             tag = args.tag + str(int(time.time()))
             experiment_name = agent.population[0].__class__.__name__ + \
@@ -94,12 +107,8 @@ def train(args):
             agent.save_path = my_save_path
             agent.population_size = population_size
 
-            # with a vectorization of 4, don't need to repeat "episodes"
-            agent.max_episodes = 4
-
             writer_path = os.path.sep.join(my_file_path.split(os.path.sep)[:-1])
             writer_path = os.path.join(writer_path, f"experiments/logs/{experiment_name}")
-
             
             writer = SummaryWriter(writer_path)
             print(f"tensorboard logging to {writer_path}")
@@ -140,6 +149,7 @@ def train(args):
 
                         number_steps = 0
                         reward_sum.append(np.mean(rewards.detach().cpu().numpy()))
+
                         agent.step(reward_sum[-1])
 
                         obs = env.reset()
@@ -148,6 +158,8 @@ def train(args):
                     action = agent(obs)
 
                     obs, reward, done, info = env.step(action)
+
+                    #agent.population[agent.meta_index].step(reward)
 
                     rewards = torch.cat([rewards, reward])
                     number_steps += 1
@@ -161,7 +173,6 @@ def train(args):
                 results["fitness std. dev."].append(np.std(reward_sum))
 
                 # training summary writer adds
-
                 max_fit = np.max(reward_sum)
                 mean_fit = np.mean(reward_sum)
                 min_fit = np.min(reward_sum)
@@ -173,11 +184,15 @@ def train(args):
                 writer.add_scalar("std_dev_fit/train", std_dev_fit, generation)
 
                 print(f"generation {generation}, mean, max, min, std. dev. fitness: "\
-                         f"{mean_fit}, {max_fit}, "\
-                         f"{min_fit}, {std_dev_fit}")
+                         f"{mean_fit:.4}, {max_fit:.4}, "\
+                         f"{min_fit:.4}, {std_dev_fit:.4}")
 
-                steps_per_second = (env.inner_env.instances*max_steps*agent.population_size)/(t1-t0)
-                print(f"steps per second = {steps_per_second} s per generation: {t1-t0}")
+                steps_per_second = (agent.episodes * \
+                        env.inner_env.instances \
+                        * max_steps*agent.population_size) \
+                        /(t1-t0)
+                print(agent.episodes)
+                print(f"steps per second = {steps_per_second:.4} s per generation: {(t1-t0):.4}")
 
                 if generation % 16 == 0:
 
@@ -199,7 +214,7 @@ def train(args):
                                 agent.meta_index = agent_count
                                 
                                 number_steps = 0
-                                reward_sum.append(np.sum(rewards.detach().cpu().numpy()))
+                                reward_sum.append(np.mean(rewards.detach().cpu().numpy()))
 
                                 obs = env.reset()
                                 rewards = torch.Tensor([]).to(my_device)
@@ -240,6 +255,9 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--seeds", type=int, nargs="+", default=[13])
     parser.add_argument("-e", "--episodes", type=int, default=1)
     parser.add_argument("-d", "--device", type=str, default="cuda:1")
+    parser.add_argument("-u", "--use_grad", dest="use_grad",\
+            action="store_true")
+
     parser.add_argument("-dim", "--env_dimension", type=int, default=256)
     parser.add_argument("-a", "--agents", type=str, nargs="+", \
             default=["Toggle", "HARLI"], \
@@ -255,9 +273,10 @@ if __name__ == "__main__":
     parser.add_argument("-xr", "--testing_rules", type=str, nargs="+", \
             default=["B3/S23"], \
             help="B/S string(s) defining CA rules to use during testing")
-
     parser.add_argument("-tag", "--tag", type=str, default="default_tag", \
             help="a tag to identify the experiment")
+
+    parser.set_defaults(use_grad=False)
 
     args = parser.parse_args()
 
