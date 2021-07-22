@@ -11,6 +11,8 @@ from torch.utils.tensorboard import SummaryWriter
 
 from carle.env import CARLE
 from carle.mcl import AE2D, \
+        PredictionBonus, \
+        SurpriseBonus, \
         RND2D, \
         CornerBonus, \
         PufferDetector, \
@@ -23,8 +25,11 @@ from game_of_carle.agents.grnn import ConvGRNN
 from game_of_carle.agents.carla import CARLA 
 from game_of_carle.agents.harli import HARLI 
 from game_of_carle.algos.cma import CMAPopulation
+from game_of_carle.algos.ges import GESPopulation
 
 WRAPPER_DICT = { \
+        "predictionbonus": PredictionBonus, \
+        "surprisebonus": SurpriseBonus, \
         "cornerbonus": CornerBonus, \
         "ae2d": AE2D, \
         "rnd2d": RND2D, \
@@ -38,6 +43,11 @@ AGENT_DICT = { \
         "carla": CARLA, \
         "convgrnn": ConvGRNN, \
         "toggle": Toggle \
+        }
+
+ALGO_DICT = { \
+        "cmapopulation": CMAPopulation, \
+        "gespopulation": GESPopulation\
         }
 
 def train(args): 
@@ -58,6 +68,8 @@ def train(args):
     training_rules = args.training_rules
     validation_rules = args.validation_rules
     testing_rules = args.testing_rules
+
+    algo = ALGO_DICT[args.algorithm.lower()]
 
 
     if use_grad:
@@ -81,7 +93,7 @@ def train(args):
 
             time_stamp = int(time.time())
 
-            agent = CMAPopulation(agent_fn, device=device, \
+            agent = algo(agent_fn, device=device, \
                     episodes=episodes, \
                     population_size=population_size, \
                     selection_mode=selection_mode, \
@@ -262,6 +274,9 @@ if __name__ == "__main__":
     parser.add_argument("-a", "--agents", type=str, nargs="+", \
             default=["Toggle", "HARLI"], \
             help="agent(s) to train in experiment, can be several")
+    parser.add_argument("-g", "--algorithm", type=str, \
+            default="CMAPopulation", \
+            help="algorithm to use for training")
     parser.add_argument("-w", "--wrappers", type=str, nargs="+", \
             default=["CornerBonus"], help="reward wrappers to train with")
     parser.add_argument("-tr", "--training_rules", type=str, nargs="+", \

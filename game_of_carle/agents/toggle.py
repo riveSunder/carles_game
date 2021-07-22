@@ -33,6 +33,7 @@ class Toggle(Agent):
     def initialize_policy(self):
 
         self.toggle_width = 32
+        self.toggle_height = 32
         assymetry_width = (self.action_width - self.toggle_width) % 2
         assymetry_height = (self.action_height - self.toggle_width) % 2
 
