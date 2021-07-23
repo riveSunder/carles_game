@@ -48,7 +48,7 @@ class CARLA(Agent):
 
 
         self.cellular_rules = nn.Sequential(nn.Conv2d(9, 64, 1, bias=False),\
-                nn.Dropout(p=0.02),\
+                nn.Dropout(p=0.05),\
                 nn.ReLU(),\
                 nn.Conv2d(64, 1, 1, bias=True),\
                 nn.Sigmoid()).to(self.my_device)
@@ -102,11 +102,7 @@ class CARLA(Agent):
             #alive_mask = (my_grid[:,3:4,:,:] > 0.05).float()
             #my_grid *= alive_mask
 
-        off_x = (obs.shape[2]) // 2
-        off_y = (obs.shape[3]) // 2
-
-        action_probabilities = my_grid#[:,0:1,off_x:-off_x,off_y:-off_y]
-        
+        action_probabilities = my_grid
 
         if get_prob:
             return action_probabilities

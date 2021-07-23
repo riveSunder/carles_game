@@ -120,6 +120,7 @@ class HARLI(CARLA):
 
             # first layer of ca policy rules
             my_grid_01 = self.ca_0(my_grid_00)
+            my_grid_01 = F.dropout(my_grid_01, p =0.025)
             my_grid_01 = self.act_0(my_grid_01)
 
             # first layer eligibility traces 
@@ -132,6 +133,7 @@ class HARLI(CARLA):
 
             # second layer of ca policy rules 
             my_grid_11 = self.ca_1(my_grid_01)
+            my_grid_11 = F.dropout(my_grid_11, p =0.025)
             my_grid_11 = self.act_1(my_grid_11 - self.bias_1)
 
             # second layer eligibility traces
@@ -146,10 +148,7 @@ class HARLI(CARLA):
             #alive_mask = (my_grid[:,3:4,:,:] > 0.05).float()
             #my_grid *= alive_mask
 
-        off_x = (obs.shape[2] - 64) // 2
-        off_y = (obs.shape[3] - 64) // 2
-
-        action_probabilities = my_grid[:,0:1,off_x:-off_x,off_y:-off_y]
+        action_probabilities = my_grid 
         
         action = (action_probabilities > 0.5).float()
 
