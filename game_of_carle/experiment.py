@@ -11,6 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from carle.env import CARLE
 from carle.mcl import AE2D, \
+        ParsimonyBonus, \
         PredictionBonus, \
         SurpriseBonus, \
         RND2D, \
@@ -30,6 +31,7 @@ from game_of_carle.algos.ges import GESPopulation
 WRAPPER_DICT = { \
         "predictionbonus": PredictionBonus, \
         "surprisebonus": SurpriseBonus, \
+        "parsimonybonus": ParsimonyBonus, \
         "cornerbonus": CornerBonus, \
         "ae2d": AE2D, \
         "rnd2d": RND2D, \
@@ -79,10 +81,13 @@ def train(args):
     env = CARLE(instances = my_instances, device=device, \
             height=env_dimension, width=env_dimension)
 
+
     my_device = env.my_device
 
     for wrapper in wrappers:
+        
         env = wrapper(env)
+        print(env._get_name())
 
     for my_seed in seeds:
 

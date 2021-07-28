@@ -73,7 +73,8 @@ source carles_venv/bin/activate
 Using [anaconda](https://www.anaconda.com/) as your python environment manager, installation is much the same:
 
 ```
-conda create -n carles_game
+# python 3.7 to avoid some conflicts
+conda create -n carles_game python=3.7
 conda activate carles_game
 ```
 

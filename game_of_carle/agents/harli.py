@@ -156,6 +156,20 @@ class HARLI(CARLA):
 
         return action
 
+    def get_weights(self):
+
+        weights = np.array([])
+
+        for param_0 in self.ca_0.parameters():
+
+            weights = np.append(weights, np.array(param_0).ravel())
+
+        for param_1 in self.ca_1.parameters():
+
+            weights = np.append(weights, np.array(param_0).ravel())
+
+        return weights
+
     def get_params(self):
         params = np.array([])
 
