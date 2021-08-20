@@ -20,6 +20,8 @@ class HARLI(CARLA):
 
     def __init__(self, **kwargs):
         super(HARLI, self).__init__(**kwargs)
+        self.obs_dim = kwargs["obs_dim"] if "obs_dim" in kwargs.keys() else 256
+        self.act_dim = kwargs["act_dim"] if "act_dim" in kwargs.keys() else 64
 
     def reset(self):
 
@@ -71,7 +73,7 @@ class HARLI(CARLA):
         self.b_1 = nn.Parameter(torch.randn(1, 32), requires_grad=False).to(self.my_device)
         self.c_1 = nn.Parameter(torch.randn(1, 1), requires_grad=False).to(self.my_device)
         self.d_1 = nn.Parameter(torch.randn(1, 32), requires_grad=False).to(self.my_device)
-
+   
         self.act_0 = nn.Tanh()
         self.act_1 = nn.Sigmoid()
 
@@ -104,6 +106,13 @@ class HARLI(CARLA):
 
         if (0):
             self.zero_eligibility()
+
+    def crop_to_act(self, action):
+
+        offset = (self.obs_dim - self.act_dim) // 2
+        
+        return action[:, :, offset:-offset, offset:-offset]
+
 
     def forward(self, obs):
         
@@ -154,7 +163,7 @@ class HARLI(CARLA):
 
         self.hebbian_update()
 
-        return action
+        return self.crop_to_act(action)
 
     def get_weights(self):
 
